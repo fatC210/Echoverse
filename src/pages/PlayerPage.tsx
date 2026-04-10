@@ -374,6 +374,7 @@ const PlayerPage = () => {
   const [isTyping, setIsTyping] = useState(true);
   const [showChoices, setShowChoices] = useState(false);
   const [showEndScreen, setShowEndScreen] = useState(false);
+  const [storyLog, setStoryLog] = useState<StoryEntry[]>([{ chapter: currentScene.chapter, narration: currentScene.narration }]);
   const [chapterTitle, setChapterTitle] = useState(currentScene.chapter);
   const [volumes, setVolumes] = useState({ master: 1, narration: 1, sfx: 0.7, music: 0.4 });
 
