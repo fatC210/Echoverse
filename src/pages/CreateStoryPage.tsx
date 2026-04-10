@@ -228,17 +228,25 @@ const CreateStoryPage = () => {
               </div>
               {customTags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {customTags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-3 py-1.5 rounded-lg text-sm bg-accent/15 border border-accent/40 text-accent flex items-center gap-1"
-                    >
-                      {tag}
-                      <button onClick={() => removeCustomTag(tag)} className="ml-1 hover:text-destructive">
-                        <X size={12} />
-                      </button>
-                    </span>
-                  ))}
+                  {customTags.map((tag) => {
+                    const isSelected = selectedTags.includes(tag);
+                    return (
+                      <span
+                        key={tag}
+                        onClick={() => toggleTag(tag)}
+                        className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 cursor-pointer transition-colors ${
+                          isSelected
+                            ? "bg-accent/15 border border-accent/40 text-accent"
+                            : "bg-secondary/50 border border-border/30 text-muted-foreground hover:border-accent/30"
+                        }`}
+                      >
+                        {tag}
+                        <button onClick={(e) => { e.stopPropagation(); removeCustomTag(tag); }} className="ml-1 hover:text-destructive">
+                          <X size={12} />
+                        </button>
+                      </span>
+                    );
+                  })}
                 </div>
               )}
             </div>
