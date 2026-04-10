@@ -270,8 +270,26 @@ const CreateStoryPage = () => {
                     const elementsStr = tagLabels.join(", ");
 
                     const systemPrompt = lang === "zh"
-                      ? `你是一个创意故事构思大师。请生成一个简短但引人入胜的故事前提（2-3句话）。${hasElements ? `故事必须融入以下元素：${elementsStr}。` : "涵盖不同类型，如科幻、奇幻、悬疑、冒险等。"}只返回故事前提本身，不要加任何前缀、标题或解释。`
-                      : `You are a creative story premise generator. Generate a short but compelling story premise (2-3 sentences). ${hasElements ? `The story must incorporate these elements: ${elementsStr}.` : "Span genres like sci-fi, fantasy, mystery, adventure, etc."} Return only the premise itself, no prefixes, titles, or explanations.`;
+                      ? `你是一个顶级悬念故事构思大师。你的任务是生成一个故事前提。
+
+要求：
+- 2-3句话，简洁有力
+- 必须有伏笔或悬念，让人想知道接下来会发生什么
+- 用省略号或暗示性结尾制造悬念感
+- 参考风格："一个宇航员在废弃空间站上独自醒来。她需要修复通讯系统才能呼叫救援，但空间站里似乎还有其他东西..."
+${hasElements ? `- 必须自然融入以下元素：${elementsStr}` : "- 随机选择一个类型：科幻、奇幻、悬疑、冒险、恐怖、都市、历史等"}
+
+输出格式：直接输出前提内容，不要加标题、前缀、引号、编号或任何解释。`
+                      : `You are a master story premise creator specializing in suspense and intrigue.
+
+Requirements:
+- 2-3 sentences, concise and gripping
+- Must contain foreshadowing or suspense that makes the reader want to know what happens next
+- End with an ellipsis or suggestive hint to create tension
+- Reference style: "An astronaut wakes up alone on an abandoned space station. She needs to repair the communications system to call for rescue, but something else seems to be on the station..."
+${hasElements ? `- Must naturally incorporate these elements: ${elementsStr}` : "- Randomly choose a genre: sci-fi, fantasy, mystery, adventure, horror, urban, historical, etc."}
+
+Output format: Output ONLY the premise text. No titles, prefixes, quotes, numbering, or explanations.`;
                     const res = await fetch(`${llmConfig.baseUrl}/chat/completions`, {
                       method: "POST",
                       headers: {
@@ -282,17 +300,23 @@ const CreateStoryPage = () => {
                         model: llmConfig.model,
                         messages: [
                           { role: "system", content: systemPrompt },
-                          { role: "user", content: lang === "zh" ? "请随机生成一个故事前提" : "Generate a random story premise" },
+                          { role: "user", content: lang === "zh" ? "生成" : "Generate" },
                         ],
                         max_tokens: 200,
-                        temperature: 1.2,
+                        temperature: 1.0,
                       }),
                     });
                     if (!res.ok) throw new Error("API error");
                     const data = await res.json();
                     const raw = data.choices?.[0]?.message?.content?.trim() || "";
-                    // Strip common prefixes like "Story Premise:" or "故事前提："
-                    const text = raw.replace(/^(story premise|故事前提|premise)[：:]\s*/i, "").replace(/^["「]|["」]$/g, "").trim();
+                    // Extract only the premise: strip prefixes, quotes, numbering, markdown
+                    const text = raw
+                      .replace(/^(#{1,3}\s+)?/gm, "")
+                      .replace(/^(story premise|故事前提|premise|前提)[：:]\s*/i, "")
+                      .replace(/^\*{1,2}(.*?)\*{1,2}$/gm, "$1")
+                      .replace(/^["「『"""'']|["」』"""'']$/g, "")
+                      .replace(/^\d+[.)]\s*/, "")
+                      .trim();
                     if (text) setPremise(text);
                   } catch {
                     toast.error(t("create.premise.genFailed", lang));
