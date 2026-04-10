@@ -88,33 +88,36 @@ const HeroSection = () => {
   const lang = useSettingsStore((s) => s.preferences.interfaceLang);
   const navigate = useNavigate();
 
-  const particles = Array.from({ length: 60 }, (_, i) => ({
-    delay: i * 0.4 + Math.random() * 2,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    size: 1 + Math.random() * 3.5,
-    duration: 5 + Math.random() * 10,
-  }));
+  // Helper: generate position avoiding center content zone (30-70% x, 25-75% y)
+  const edgePos = () => {
+    let x: number, y: number;
+    do {
+      x = Math.random() * 100;
+      y = Math.random() * 100;
+    } while (x > 25 && x < 75 && y > 20 && y < 80);
+    return { x, y };
+  };
 
-  const glowOrbs = Array.from({ length: 6 }, (_, i) => ({
-    delay: i * 2,
-    x: 10 + Math.random() * 80,
-    y: 10 + Math.random() * 80,
-    size: 40 + Math.random() * 60,
-  }));
+  const particles = Array.from({ length: 60 }, (_, i) => {
+    const { x, y } = edgePos();
+    return { delay: i * 0.4 + Math.random() * 2, x, y, size: 1 + Math.random() * 3.5, duration: 5 + Math.random() * 10 };
+  });
+
+  const glowOrbs = Array.from({ length: 6 }, (_, i) => {
+    const { x, y } = edgePos();
+    return { delay: i * 2, x, y, size: 40 + Math.random() * 60 };
+  });
 
   const shootingStars = Array.from({ length: 4 }, (_, i) => ({
     delay: i * 5 + Math.random() * 3,
-    startX: Math.random() * 60,
-    startY: Math.random() * 50,
+    startX: Math.random() * 20,
+    startY: Math.random() * 30,
   }));
 
-  const pulsingDots = Array.from({ length: 15 }, (_, i) => ({
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    delay: i * 0.8 + Math.random() * 2,
-    size: 2 + Math.random() * 3,
-  }));
+  const pulsingDots = Array.from({ length: 15 }, (_, i) => {
+    const { x, y } = edgePos();
+    return { x, y, delay: i * 0.8 + Math.random() * 2, size: 2 + Math.random() * 3 };
+  });
 
   return (
     <section className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-4 overflow-hidden">
