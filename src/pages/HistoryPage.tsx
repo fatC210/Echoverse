@@ -4,7 +4,14 @@ import { motion } from "framer-motion";
 import { t } from "@/lib/i18n";
 import { useSettingsStore } from "@/lib/store/settings-store";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Play, RotateCcw, Download, Trash2, Clock, GitBranch, Clapperboard } from "lucide-react";
+import { ArrowLeft, Play, RotateCcw, Download, Trash2, Clock, GitBranch, Clapperboard, MoreVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface StoryEntry {
   id: string;
@@ -104,13 +111,37 @@ const HistoryPage = () => {
                     <h3 className="font-serif font-semibold text-lg group-hover:text-gradient-primary transition-colors">{t(story.titleKey, lang)}</h3>
                     <p className="text-xs text-muted-foreground">{t(story.genreKey, lang)}</p>
                   </div>
-                  <span className={`px-2 py-0.5 text-xs rounded-full ${
-                    story.status === "completed"
-                      ? "bg-emerald-500/20 text-emerald-400"
-                      : "bg-accent/20 text-accent"
-                  }`}>
-                    {story.status === "completed" ? t("history.status.completed", lang) : t("history.status.playing", lang)}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${
+                      story.status === "completed"
+                        ? "bg-emerald-500/20 text-emerald-400"
+                        : "bg-accent/20 text-accent"
+                    }`}>
+                      {story.status === "completed" ? t("history.status.completed", lang) : t("history.status.playing", lang)}
+                    </span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                          <MoreVertical size={14} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-36">
+                        <DropdownMenuItem onClick={() => navigate(`/play/${story.id}`)}>
+                          {story.status === "playing"
+                            ? <><Play size={14} className="mr-2" /> {t("history.continue", lang)}</>
+                            : <><RotateCcw size={14} className="mr-2" /> {t("history.replay", lang)}</>
+                          }
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Download size={14} className="mr-2" /> {t("history.export", lang)}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleDelete(story.id)} className="text-destructive focus:text-destructive">
+                          <Trash2 size={14} className="mr-2" /> {t("history.delete", lang)}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap gap-1 mt-3">
@@ -131,18 +162,6 @@ const HistoryPage = () => {
                 <p className="text-xs text-muted-foreground mt-3">
                   {new Date(story.createdAt).toLocaleDateString()}
                 </p>
-
-                <div className="flex gap-2 pt-2 mt-auto border-t border-border">
-                  <Button variant="ghost" size="sm" onClick={() => navigate(`/play/${story.id}`)} className="flex-1 text-xs">
-                    {story.status === "playing" ? <><Play size={12} className="mr-1" /> {t("history.continue", lang)}</> : <><RotateCcw size={12} className="mr-1" /> {t("history.replay", lang)}</>}
-                  </Button>
-                  <Button variant="ghost" size="sm" className="text-xs">
-                    <Download size={12} className="mr-1" /> {t("history.export", lang)}
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(story.id)} className="text-destructive/70 hover:text-destructive">
-                    <Trash2 size={12} />
-                  </Button>
-                </div>
               </motion.div>
             ))}
           </div>
