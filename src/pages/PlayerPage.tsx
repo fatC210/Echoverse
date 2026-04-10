@@ -395,9 +395,19 @@ const PlayerPage = () => {
   const handleChoice = useCallback((choiceId: string, text?: string) => {
     setShowChoices(false);
 
+    // Find the choice text for the log
+    const chosenOption = currentScene.choices.find(c => c.id === choiceId);
+    const choiceText = text || chosenOption?.text || choiceId;
+
+    // Update the last log entry with the choice
+    setStoryLog(prev => {
+      const updated = [...prev];
+      updated[updated.length - 1] = { ...updated[updated.length - 1], choiceText };
+      return updated;
+    });
+
     const nextIndex = sceneIndex + 1;
     if (nextIndex >= scenes.length) {
-      // Story ends
       setShowEndScreen(true);
       return;
     }
@@ -408,7 +418,8 @@ const PlayerPage = () => {
     setMood(nextScene.mood);
     setNarrationText(nextScene.narration);
     setChapterTitle(nextScene.chapter);
-  }, [sceneIndex, scenes]);
+    setStoryLog(prev => [...prev, { chapter: nextScene.chapter, narration: nextScene.narration }]);
+  }, [sceneIndex, scenes, currentScene]);
   const handleVolumeChange = (key: string, val: number) => {
     setVolumes((prev) => ({ ...prev, [key]: val }));
   };
