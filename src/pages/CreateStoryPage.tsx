@@ -339,7 +339,6 @@ const CreateStoryPage = () => {
             size="lg"
             className="w-full bg-accent hover:bg-accent/90 text-accent-foreground py-7 text-lg btn-game glow-accent-strong disabled:opacity-30 disabled:shadow-none"
           >
-            <Headphones size={20} className="mr-2" />
             {t("create.start", lang)}
           </Button>
         </motion.div>
