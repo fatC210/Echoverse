@@ -7,11 +7,13 @@ import { STORY_TAGS, type TagCategory } from "@/lib/constants/story-tags";
 import { DURATION_OPTIONS } from "@/lib/constants/defaults";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, X, Loader2, ChevronDown, ChevronUp, Plus, Headphones } from "lucide-react";
+import { ArrowLeft, X, Loader2, ChevronDown, ChevronUp, Plus, Headphones, Wand2 } from "lucide-react";
+import { toast } from "sonner";
 
 const CreateStoryPage = () => {
   const navigate = useNavigate();
   const lang = useSettingsStore((s) => s.preferences.interfaceLang);
+  const llmConfig = useSettingsStore((s) => s.llm);
 
   const [premise, setPremise] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -21,6 +23,7 @@ const CreateStoryPage = () => {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const toggleTag = (tagId: string) => {
     setSelectedTags((prev) =>
@@ -136,13 +139,60 @@ const CreateStoryPage = () => {
           {/* Premise */}
           <section className="glass-panel-strong p-6 space-y-3">
             <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase">{t("create.premise.label", lang)}</label>
-            <textarea
-              value={premise}
-              onChange={(e) => setPremise(e.target.value)}
-              placeholder={t("create.premise.placeholder", lang)}
-              rows={4}
-              className="w-full input-game rounded-xl p-4 text-foreground placeholder:text-muted-foreground/40 resize-y min-h-[100px] focus:outline-none font-serif"
-            />
+            <div className="relative">
+              <textarea
+                value={premise}
+                onChange={(e) => setPremise(e.target.value)}
+                placeholder={t("create.premise.placeholder", lang)}
+                rows={4}
+                className="w-full input-game rounded-xl p-4 pr-14 text-foreground placeholder:text-muted-foreground/40 resize-y min-h-[100px] focus:outline-none font-serif"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  if (!llmConfig.apiKey) {
+                    toast.error(t("create.premise.noApiKey", lang));
+                    return;
+                  }
+                  setIsGenerating(true);
+                  try {
+                    const systemPrompt = lang === "zh"
+                      ? "你是一个创意故事构思大师。请生成一个简短但引人入胜的故事前提（2-3句话），涵盖不同类型，如科幻、奇幻、悬疑、冒险等。只返回故事前提本身，不要加任何前缀或解释。"
+                      : "You are a creative story premise generator. Generate a short but compelling story premise (2-3 sentences) spanning genres like sci-fi, fantasy, mystery, adventure, etc. Return only the premise itself, no prefixes or explanations.";
+                    const res = await fetch(`${llmConfig.baseUrl}/chat/completions`, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${llmConfig.apiKey}`,
+                      },
+                      body: JSON.stringify({
+                        model: llmConfig.model,
+                        messages: [
+                          { role: "system", content: systemPrompt },
+                          { role: "user", content: lang === "zh" ? "请随机生成一个故事前提" : "Generate a random story premise" },
+                        ],
+                        max_tokens: 200,
+                        temperature: 1.2,
+                      }),
+                    });
+                    if (!res.ok) throw new Error("API error");
+                    const data = await res.json();
+                    const text = data.choices?.[0]?.message?.content?.trim();
+                    if (text) setPremise(text);
+                  } catch {
+                    toast.error(t("create.premise.genFailed", lang));
+                  } finally {
+                    setIsGenerating(false);
+                  }
+                }}
+                disabled={isGenerating}
+                className="absolute bottom-3 right-3 w-9 h-9 p-0 rounded-lg text-accent hover:bg-accent/10 hover:text-accent"
+                title={t("create.premise.aiGenerate", lang)}
+              >
+                {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
+              </Button>
+            </div>
           </section>
 
           {/* Tags */}
