@@ -143,12 +143,13 @@ const ChoicePanel = ({
 
       <div className="flex gap-2">
         <div className="flex-1 relative">
+          <MessageCircle size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={freeText}
             onChange={(e) => setFreeText(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && freeText.trim()) onSelect("free", freeText); }}
-            placeholder={`💬 ${t("player.freeText", lang)}`}
-            className="bg-card/60 border-border backdrop-blur-sm pr-12"
+            placeholder={t("player.freeText", lang)}
+            className="bg-card/60 border-border backdrop-blur-sm pl-9 pr-12"
           />
           <button
             onClick={() => { if (freeText.trim()) onSelect("free", freeText); }}
