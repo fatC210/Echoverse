@@ -101,8 +101,8 @@ const HistoryPage = () => {
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="font-serif font-semibold text-lg group-hover:text-gradient-primary transition-colors">{story.title}</h3>
-                    <p className="text-xs text-muted-foreground">{story.genre}</p>
+                    <h3 className="font-serif font-semibold text-lg group-hover:text-gradient-primary transition-colors">{t(story.titleKey, lang)}</h3>
+                    <p className="text-xs text-muted-foreground">{t(story.genreKey, lang)}</p>
                   </div>
                   <span className={`px-2 py-0.5 text-xs rounded-full ${
                     story.status === "completed"
@@ -114,18 +114,18 @@ const HistoryPage = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-1">
-                  {story.tags.map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 text-xs rounded bg-secondary text-muted-foreground">{tag}</span>
+                  {story.tagKeys.map((tagKey) => (
+                    <span key={tagKey} className="px-2 py-0.5 text-xs rounded bg-secondary text-muted-foreground">{t(tagKey, lang)}</span>
                   ))}
                 </div>
 
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1"><Clock size={12} />{formatDuration(story.totalDurationSec)}</span>
-                  <span className="flex items-center gap-1"><GitBranch size={12} />{story.totalDecisions} decisions</span>
+                  <span className="flex items-center gap-1"><GitBranch size={12} />{story.totalDecisions} {t("history.decisions", lang)}</span>
                 </div>
 
-                {story.endingName && (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1"><Clapperboard size={12} /> {story.endingName}</p>
+                {story.endingKey && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1"><Clapperboard size={12} /> {t("history.ending", lang)}: {t(story.endingKey, lang)}</p>
                 )}
 
                 <p className="text-xs text-muted-foreground">
