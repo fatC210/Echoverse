@@ -328,6 +328,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "搜索更多日志记录", hint: "真相或许藏在数据中……", next: "logs" },
         { id: "b", label: "B", text: "前往生物实验室", hint: "被收容的到底是什么？", next: "lab" },
         { id: "c", label: "C", text: "启动紧急广播系统", hint: "也许有人还在监听", next: "broadcast" },
+        { id: "d", label: "D", text: "查找船员生存记录", hint: "有没有人还活着？", next: "logs" },
+        { id: "e", label: "E", text: "下载数据到便携设备", hint: "先备份证据再说", next: "broadcast" },
       ],
     },
     corridor: {
@@ -337,6 +339,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "靠近并呼唤对方", hint: "也许他需要帮助", next: "survivor" },
         { id: "b", label: "B", text: "保持距离观察", hint: "先确认安全再说", next: "observe" },
         { id: "c", label: "C", text: "悄悄离开", hint: "直觉告诉你这里不安全", next: "flee" },
+        { id: "d", label: "D", text: "用手电筒照向对方", hint: "先看清楚再做决定", next: "observe" },
+        { id: "e", label: "E", text: "模仿他的敲击节奏", hint: "也许这是某种暗号", next: "survivor" },
       ],
     },
     bracelet: {
@@ -346,6 +350,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "尝试短路重启", hint: "也许能发出一次信号", next: "signal" },
         { id: "b", label: "B", text: "检查霜花来源", hint: "这不像是普通的结冰……", next: "frost" },
         { id: "c", label: "C", text: "拆下电池另作他用", hint: "也许有更需要电力的地方", next: "battery" },
+        { id: "d", label: "D", text: "用体温融化霜花", hint: "也许能恢复电路功能", next: "frost" },
+        { id: "e", label: "E", text: "寻找其他通讯设备", hint: "这个手环可能无法修复", next: "signal" },
       ],
     },
     logs: {
@@ -355,6 +361,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "寻找有机体样本", hint: "如果它想交流，也许我应该回应" },
         { id: "b", label: "B", text: "删除所有数据并撤离", hint: "有些知识太危险了" },
         { id: "c", label: "C", text: "将数据发送至地球", hint: "让人类自己做决定" },
+        { id: "d", label: "D", text: "寻找最后幸存的船员", hint: "也许有人与它成功交流过" },
+        { id: "e", label: "E", text: "在日志中搜索弱点", hint: "以防需要摧毁它" },
       ],
     },
     lab: {
