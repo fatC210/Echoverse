@@ -58,8 +58,7 @@ const NarrationDisplay = ({ text, isTyping }: { text: string; isTyping: boolean 
 };
 
 const AudioLayerIndicator = ({ layers }: { layers: { type: string; name: string; active: boolean }[] }) => (
-  <div className="flex items-center justify-center gap-4 py-2 px-4 bg-secondary/30 backdrop-blur-sm">
-    {/* Waveform */}
+  <div className="flex items-center justify-center gap-4 px-4 py-1 text-muted-foreground">
     <div className="flex items-center gap-[1px] h-4">
       {Array.from({ length: 8 }).map((_, i) => (
         <div
@@ -452,13 +451,11 @@ const PlayerPage = () => {
         </div>
       </div>
 
-      {/* Audio layer indicator */}
-      <div className="relative z-20">
+      <div className="relative z-20 pt-1">
         <AudioLayerIndicator layers={audioLayers} />
       </div>
 
-      {/* Choice panel */}
-      <div className="relative z-20 pb-6 pt-4">
+      <div className="relative z-20 pb-6 pt-2">
         <AnimatePresence>
           {showChoices && (
             <ChoicePanel
