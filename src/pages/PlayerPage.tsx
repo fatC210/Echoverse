@@ -185,7 +185,7 @@ const VolumeControl = ({
   ];
 
   return (
-    <div className="w-64 p-4 glass-panel space-y-4">
+    <div className="w-64 p-4 bg-background border border-border rounded-xl shadow-lg space-y-4">
       {sliders.map((s) => (
         <div key={s.key} className="space-y-1">
           <div className="flex justify-between text-xs text-muted-foreground">
@@ -415,7 +415,7 @@ const PlayerPage = () => {
           <div className="relative">
             <Button variant="ghost" size="sm" onClick={() => { setShowWorldPanel(!showWorldPanel); setShowVoicePanel(false); setShowVolume(false); }} className="text-muted-foreground"><Edit3 size={14} /><span className="ml-1 text-xs hidden md:inline">{t("player.world", lang)}</span></Button>
             {showWorldPanel && (
-              <div className="absolute top-full right-0 mt-2 z-50 glass-panel p-4 w-64 space-y-3">
+              <div className="absolute top-full right-0 mt-2 z-50 bg-background border border-border rounded-xl shadow-lg p-4 w-64 space-y-3">
                 <h3 className="text-xs font-mono uppercase text-muted-foreground tracking-wider">{t("player.world", lang)}</h3>
                 <div className="space-y-2 text-sm text-foreground/80">
                   <p><span className="text-muted-foreground">{storyLang === "zh" ? "地点：" : "Location: "}</span>{storyLang === "zh" ? "废弃空间站 · 第7区" : "Abandoned Station · Sector 7"}</p>
@@ -428,7 +428,7 @@ const PlayerPage = () => {
           <div className="relative">
             <Button variant="ghost" size="sm" onClick={() => { setShowVoicePanel(!showVoicePanel); setShowWorldPanel(false); setShowVolume(false); }} className="text-muted-foreground"><Mic size={14} /><span className="ml-1 text-xs hidden md:inline">{t("player.voice", lang)}</span></Button>
             {showVoicePanel && (
-              <div className="absolute top-full right-0 mt-2 z-50 glass-panel p-4 w-64 space-y-3">
+              <div className="absolute top-full right-0 mt-2 z-50 bg-background border border-border rounded-xl shadow-lg p-4 w-64 space-y-3">
                 <h3 className="text-xs font-mono uppercase text-muted-foreground tracking-wider">{t("player.voice", lang)}</h3>
                 <div className="space-y-2 text-sm text-foreground/80">
                   <p><span className="text-muted-foreground">{storyLang === "zh" ? "当前声音：" : "Current voice: "}</span>{storyLang === "zh" ? "默认旁白" : "Default Narrator"}</p>
