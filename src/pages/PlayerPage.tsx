@@ -446,16 +446,16 @@ const PlayerPage = () => {
 
       {/* Main content */}
       <div className="relative z-20 flex-1 flex flex-col justify-start">
-        <div className="py-8">
+        <div className="py-4">
           <NarrationDisplay text={narrationText} isTyping={isTyping} />
         </div>
       </div>
 
-      <div className="relative z-20 pt-1">
+      <div className="relative z-20">
         <AudioLayerIndicator layers={audioLayers} />
       </div>
 
-      <div className="relative z-20 pb-6 pt-2">
+      <div className="relative z-20 pb-4 pt-1">
         <AnimatePresence>
           {showChoices && (
             <ChoicePanel
