@@ -312,23 +312,21 @@ const CreateStoryPage = () => {
           {/* Duration */}
           <section className="glass-panel-strong p-6 space-y-3">
             <h2 className="text-xs text-muted-foreground font-mono tracking-wider uppercase">{t("create.duration.title", lang)}</h2>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-2">
               {DURATION_OPTIONS.map((opt) => (
                 <button
                   key={opt.id}
                   onClick={() => setDuration(opt.id)}
-                  className={`text-center p-4 rounded-xl border transition-all duration-200 ${
+                  className={`w-full text-left p-3.5 rounded-xl border transition-all duration-200 ${
                     duration === opt.id
                       ? "bg-accent/15 border-accent/40 glow-accent"
                       : "border-border/50 hover:border-accent/30"
                   }`}
                 >
-                  <div className={`text-sm font-medium ${duration === opt.id ? "text-accent" : "text-foreground"}`}>
-                    {opt.id === "short" ? (lang === "zh" ? "短篇" : "Short") : opt.id === "medium" ? (lang === "zh" ? "中篇" : "Medium") : (lang === "zh" ? "长篇" : "Long")}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    ~{opt.minutes} min · {opt.chapters} {lang === "zh" ? "选择点" : "choices"}
-                  </div>
+                  <span className={`text-sm ${duration === opt.id ? "text-accent" : "text-muted-foreground"}`}>
+                    {duration === opt.id ? "◉ " : "○ "}
+                    {opt.label[lang]}
+                  </span>
                 </button>
               ))}
             </div>
