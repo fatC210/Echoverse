@@ -7,7 +7,7 @@ import { MOOD_MAP, type MoodType } from "@/lib/constants/moods";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { ArrowLeft, Volume2, Mic, Edit3, Square, Send } from "lucide-react";
+import { ArrowLeft, Volume2, Mic, Edit3, Square, Send, Volume1, Music, MessageCircle, Clapperboard, Timer, GitBranch as GitBranchIcon, Layers, RefreshCw, RotateCcw, Download, FileText, Package, Home } from "lucide-react";
 
 // Sub-components
 
@@ -71,9 +71,9 @@ const AudioLayerIndicator = ({ layers }: { layers: { type: string; name: string;
     </div>
     {layers.filter((l) => l.active).map((l) => (
       <span key={l.type} className="text-xs text-muted-foreground flex items-center gap-1">
-        {l.type === "sfx" && "🔊"}
-        {l.type === "music" && "🎵"}
-        {l.type === "tts" && "🗣"}
+        {l.type === "sfx" && <Volume1 size={12} />}
+        {l.type === "music" && <Music size={12} />}
+        {l.type === "tts" && <MessageCircle size={12} />}
         {l.name}
       </span>
     ))}
@@ -160,10 +160,10 @@ const VolumeControl = ({
   const lang = useSettingsStore((s) => s.preferences.interfaceLang);
 
   const sliders = [
-    { key: "master", label: t("player.masterVolume", lang), icon: "🔊" },
-    { key: "narration", label: t("player.narrationVolume", lang), icon: "🗣" },
-    { key: "sfx", label: t("player.sfxVolume", lang), icon: "🔊" },
-    { key: "music", label: t("player.musicVolume", lang), icon: "🎵" },
+    { key: "master", label: t("player.masterVolume", lang), icon: <Volume2 size={14} /> },
+    { key: "narration", label: t("player.narrationVolume", lang), icon: <MessageCircle size={14} /> },
+    { key: "sfx", label: t("player.sfxVolume", lang), icon: <Volume1 size={14} /> },
+    { key: "music", label: t("player.musicVolume", lang), icon: <Music size={14} /> },
   ];
 
   return (
@@ -207,7 +207,7 @@ const StoryEndScreen = ({
       className="fixed inset-0 bg-background/95 flex items-center justify-center z-50"
     >
       <div className="max-w-lg w-full mx-4 text-center space-y-6">
-        <div className="text-5xl mb-2">🎬</div>
+        <Clapperboard size={40} className="mx-auto mb-2 text-accent" />
         <h1 className="text-2xl font-bold font-serif text-gradient-primary">
           「{title}」— {t("end.title", lang)}
         </h1>
@@ -216,10 +216,10 @@ const StoryEndScreen = ({
         </p>
 
         <div className="glass-panel p-6 text-left space-y-3">
-          <div className="flex justify-between text-sm"><span className="text-muted-foreground">⏱ {t("end.duration", lang)}</span><span>{stats.duration}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-muted-foreground">🔀 {t("end.decisions", lang)}</span><span>{stats.decisions}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-muted-foreground">🎵 {t("end.audioLayers", lang)}</span><span>{stats.audioLayers}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-muted-foreground">♻️ {t("end.cacheHit", lang)}</span><span>{stats.cacheHit}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-muted-foreground flex items-center gap-1.5"><Timer size={14} /> {t("end.duration", lang)}</span><span>{stats.duration}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-muted-foreground flex items-center gap-1.5"><GitBranchIcon size={14} /> {t("end.decisions", lang)}</span><span>{stats.decisions}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-muted-foreground flex items-center gap-1.5"><Layers size={14} /> {t("end.audioLayers", lang)}</span><span>{stats.audioLayers}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-muted-foreground flex items-center gap-1.5"><RefreshCw size={14} /> {t("end.cacheHit", lang)}</span><span>{stats.duration}</span></div>
         </div>
 
         <div className="glass-panel p-4 space-y-2">

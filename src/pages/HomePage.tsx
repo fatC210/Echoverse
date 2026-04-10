@@ -220,9 +220,9 @@ const HeroSection = () => {
 };
 
 const features = [
-  { icon: Sparkles, titleKey: "home.features.interactive.title", descKey: "home.features.interactive.desc", emoji: "🎭" },
-  { icon: Music, titleKey: "home.features.audio.title", descKey: "home.features.audio.desc", emoji: "🎵" },
-  { icon: Brain, titleKey: "home.features.adaptive.title", descKey: "home.features.adaptive.desc", emoji: "🧠" },
+  { Icon: Sparkles, titleKey: "home.features.interactive.title", descKey: "home.features.interactive.desc" },
+  { Icon: Music, titleKey: "home.features.audio.title", descKey: "home.features.audio.desc" },
+  { Icon: Brain, titleKey: "home.features.adaptive.title", descKey: "home.features.adaptive.desc" },
 ];
 
 const FeatureCards = () => {
@@ -240,8 +240,8 @@ const FeatureCards = () => {
             transition={{ delay: i * 0.15 }}
             className="glass-panel-strong p-6 text-center group hover:border-accent/30 transition-all duration-300"
           >
-            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-accent/10 border border-accent/15 flex items-center justify-center text-2xl group-hover:glow-accent transition-all duration-300">
-              {f.emoji}
+            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-accent/10 border border-accent/15 flex items-center justify-center group-hover:glow-accent transition-all duration-300">
+              <f.Icon size={24} className="text-accent" />
             </div>
             <h3 className="text-lg font-semibold font-serif mb-2 group-hover:text-accent transition-colors">
               {t(f.titleKey, lang)}
