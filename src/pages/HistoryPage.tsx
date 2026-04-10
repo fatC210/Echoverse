@@ -97,7 +97,7 @@ const HistoryPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="glass-panel p-5 space-y-3 hover:border-accent/30 transition-colors group"
+                className="glass-panel p-5 flex flex-col hover:border-accent/30 transition-colors group"
               >
                 <div className="flex items-start justify-between">
                   <div>
@@ -113,26 +113,26 @@ const HistoryPage = () => {
                   </span>
                 </div>
 
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1 mt-3">
                   {story.tagKeys.map((tagKey) => (
                     <span key={tagKey} className="px-2 py-0.5 text-xs rounded bg-secondary text-muted-foreground">{t(tagKey, lang)}</span>
                   ))}
                 </div>
 
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3">
                   <span className="flex items-center gap-1"><Clock size={12} />{formatDuration(story.totalDurationSec)}</span>
                   <span className="flex items-center gap-1"><GitBranch size={12} />{story.totalDecisions} {t("history.decisions", lang)}</span>
                 </div>
 
                 {story.endingKey && (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1"><Clapperboard size={12} /> {t("history.ending", lang)}: {t(story.endingKey, lang)}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-3"><Clapperboard size={12} /> {t("history.ending", lang)}: {t(story.endingKey, lang)}</p>
                 )}
 
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground mt-3">
                   {new Date(story.createdAt).toLocaleDateString()}
                 </p>
 
-                <div className="flex gap-2 pt-2 border-t border-border">
+                <div className="flex gap-2 pt-2 mt-auto border-t border-border">
                   <Button variant="ghost" size="sm" onClick={() => navigate(`/play/${story.id}`)} className="flex-1 text-xs">
                     {story.status === "playing" ? <><Play size={12} className="mr-1" /> {t("history.continue", lang)}</> : <><RotateCcw size={12} className="mr-1" /> {t("history.replay", lang)}</>}
                   </Button>
