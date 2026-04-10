@@ -204,15 +204,23 @@ const VolumeControl = ({
   );
 };
 
+interface StoryEntry {
+  chapter: string;
+  narration: string;
+  choiceText?: string;
+}
+
 const StoryEndScreen = ({
   title,
   endingName,
   stats,
+  storyLog,
   onAction,
 }: {
   title: string;
   endingName: string;
   stats: { duration: string; decisions: number; audioLayers: string; cacheHit: string };
+  storyLog: StoryEntry[];
   onAction: (action: string) => void;
 }) => {
   const lang = useSettingsStore((s) => s.preferences.interfaceLang);
@@ -221,38 +229,63 @@ const StoryEndScreen = ({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="fixed inset-0 bg-background/95 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-background z-50 overflow-y-auto"
     >
-      <div className="max-w-lg w-full mx-4 text-center space-y-6">
-        <Clapperboard size={40} className="mx-auto mb-2 text-accent" />
-        <h1 className="text-2xl font-bold font-serif text-gradient-primary">
-          「{title}」— {t("end.title", lang)}
-        </h1>
-        <p className="text-lg text-muted-foreground">
-          {t("end.ending", lang)}: 「{endingName}」
-        </p>
+      <div className="max-w-2xl mx-auto px-4 py-10 space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-3">
+          <Clapperboard size={36} className="mx-auto text-accent" />
+          <h1 className="text-2xl font-bold font-serif text-gradient-primary">
+            「{title}」— {t("end.title", lang)}
+          </h1>
+          <p className="text-muted-foreground">
+            {t("end.ending", lang)}: 「{endingName}」
+          </p>
+        </div>
 
-        <div className="glass-panel p-6 text-left space-y-3">
+        {/* Stats */}
+        <div className="border border-border/50 rounded-xl p-5 space-y-3">
           <div className="flex justify-between text-sm"><span className="text-muted-foreground flex items-center gap-1.5"><Timer size={14} /> {t("end.duration", lang)}</span><span>{stats.duration}</span></div>
           <div className="flex justify-between text-sm"><span className="text-muted-foreground flex items-center gap-1.5"><GitBranchIcon size={14} /> {t("end.decisions", lang)}</span><span>{stats.decisions}</span></div>
           <div className="flex justify-between text-sm"><span className="text-muted-foreground flex items-center gap-1.5"><Layers size={14} /> {t("end.audioLayers", lang)}</span><span>{stats.audioLayers}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-muted-foreground flex items-center gap-1.5"><RefreshCw size={14} /> {t("end.cacheHit", lang)}</span><span>{stats.duration}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-muted-foreground flex items-center gap-1.5"><RefreshCw size={14} /> {t("end.cacheHit", lang)}</span><span>{stats.cacheHit}</span></div>
         </div>
 
-        <div className="glass-panel p-4 space-y-2">
+        {/* Story Review */}
+        <div className="space-y-4">
+          <h2 className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+            {lang === "zh" ? "故事回顾" : "Story Review"}
+          </h2>
+          <div className="space-y-6">
+            {storyLog.map((entry, i) => (
+              <div key={i} className="space-y-2">
+                <h3 className="text-sm font-medium text-accent">{entry.chapter}</h3>
+                <p className="text-sm text-foreground/80 leading-relaxed font-serif">{entry.narration}</p>
+                {entry.choiceText && (
+                  <p className="text-xs text-muted-foreground border-l-2 border-accent/30 pl-3 ml-1">
+                    {lang === "zh" ? "你的选择：" : "Your choice: "}{entry.choiceText}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="border border-border/50 rounded-xl p-4 space-y-1">
           {[
-            { id: "continue", label: t("end.continue", lang) },
-            { id: "replay", label: t("end.replay", lang) },
-            { id: "exportAudio", label: t("end.exportAudio", lang) },
-            { id: "exportText", label: t("end.exportText", lang) },
-            { id: "exportWorld", label: t("end.exportWorld", lang) },
-            { id: "home", label: t("end.home", lang) },
+            { id: "continue", label: t("end.continue", lang), icon: <RotateCcw size={14} /> },
+            { id: "replay", label: t("end.replay", lang), icon: <RefreshCw size={14} /> },
+            { id: "exportAudio", label: t("end.exportAudio", lang), icon: <Download size={14} /> },
+            { id: "exportText", label: t("end.exportText", lang), icon: <FileText size={14} /> },
+            { id: "home", label: t("end.home", lang), icon: <Home size={14} /> },
           ].map((action) => (
             <button
               key={action.id}
               onClick={() => onAction(action.id)}
-              className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors text-sm"
+              className="w-full text-left p-3 rounded-lg hover:bg-muted transition-colors text-sm flex items-center gap-2 text-muted-foreground hover:text-foreground"
             >
+              {action.icon}
               {action.label}
             </button>
           ))}
