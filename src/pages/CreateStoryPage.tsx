@@ -136,65 +136,6 @@ const CreateStoryPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-6"
         >
-          {/* Premise */}
-          <section className="glass-panel-strong p-6 space-y-3">
-            <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase">{t("create.premise.label", lang)}</label>
-            <div className="relative">
-              <textarea
-                value={premise}
-                onChange={(e) => setPremise(e.target.value)}
-                placeholder={t("create.premise.placeholder", lang)}
-                rows={4}
-                className="w-full input-game rounded-xl p-4 pr-14 text-foreground placeholder:text-muted-foreground/40 resize-y min-h-[100px] focus:outline-none font-serif"
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={async () => {
-                  if (!llmConfig.apiKey) {
-                    toast.error(t("create.premise.noApiKey", lang));
-                    return;
-                  }
-                  setIsGenerating(true);
-                  try {
-                    const systemPrompt = lang === "zh"
-                      ? "你是一个创意故事构思大师。请生成一个简短但引人入胜的故事前提（2-3句话），涵盖不同类型，如科幻、奇幻、悬疑、冒险等。只返回故事前提本身，不要加任何前缀或解释。"
-                      : "You are a creative story premise generator. Generate a short but compelling story premise (2-3 sentences) spanning genres like sci-fi, fantasy, mystery, adventure, etc. Return only the premise itself, no prefixes or explanations.";
-                    const res = await fetch(`${llmConfig.baseUrl}/chat/completions`, {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${llmConfig.apiKey}`,
-                      },
-                      body: JSON.stringify({
-                        model: llmConfig.model,
-                        messages: [
-                          { role: "system", content: systemPrompt },
-                          { role: "user", content: lang === "zh" ? "请随机生成一个故事前提" : "Generate a random story premise" },
-                        ],
-                        max_tokens: 200,
-                        temperature: 1.2,
-                      }),
-                    });
-                    if (!res.ok) throw new Error("API error");
-                    const data = await res.json();
-                    const text = data.choices?.[0]?.message?.content?.trim();
-                    if (text) setPremise(text);
-                  } catch {
-                    toast.error(t("create.premise.genFailed", lang));
-                  } finally {
-                    setIsGenerating(false);
-                  }
-                }}
-                disabled={isGenerating}
-                className="absolute bottom-3 right-3 w-9 h-9 p-0 rounded-lg text-accent hover:bg-accent/10 hover:text-accent"
-                title={t("create.premise.aiGenerate", lang)}
-              >
-                {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
-              </Button>
-            </div>
-          </section>
-
           {/* Tags */}
           <section className="glass-panel-strong p-6 space-y-5">
             <h2 className="text-xs text-muted-foreground font-mono tracking-wider uppercase">{t("create.tags.title", lang)}</h2>
@@ -294,6 +235,78 @@ const CreateStoryPage = () => {
                 </p>
               </div>
             )}
+          </section>
+
+          {/* Premise */}
+          <section className="glass-panel-strong p-6 space-y-3">
+            <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase">{t("create.premise.label", lang)}</label>
+            <div className="relative">
+              <textarea
+                value={premise}
+                onChange={(e) => setPremise(e.target.value)}
+                placeholder={t("create.premise.placeholder", lang)}
+                rows={4}
+                className="w-full input-game rounded-xl p-4 pr-14 text-foreground placeholder:text-muted-foreground/40 resize-y min-h-[100px] focus:outline-none font-serif"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  if (!llmConfig.apiKey) {
+                    toast.error(t("create.premise.noApiKey", lang));
+                    return;
+                  }
+                  setIsGenerating(true);
+                  try {
+                    // Build tag context from selected elements
+                    const tagLabels = allSelected.map((tag) => {
+                      for (const cat of Object.values(STORY_TAGS)) {
+                        const found = cat.options.find((o) => o.id === tag);
+                        if (found) return found.label[lang];
+                      }
+                      return tag;
+                    });
+                    const hasElements = tagLabels.length > 0;
+                    const elementsStr = tagLabels.join(", ");
+
+                    const systemPrompt = lang === "zh"
+                      ? `你是一个创意故事构思大师。请生成一个简短但引人入胜的故事前提（2-3句话）。${hasElements ? `故事必须融入以下元素：${elementsStr}。` : "涵盖不同类型，如科幻、奇幻、悬疑、冒险等。"}只返回故事前提本身，不要加任何前缀、标题或解释。`
+                      : `You are a creative story premise generator. Generate a short but compelling story premise (2-3 sentences). ${hasElements ? `The story must incorporate these elements: ${elementsStr}.` : "Span genres like sci-fi, fantasy, mystery, adventure, etc."} Return only the premise itself, no prefixes, titles, or explanations.`;
+                    const res = await fetch(`${llmConfig.baseUrl}/chat/completions`, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${llmConfig.apiKey}`,
+                      },
+                      body: JSON.stringify({
+                        model: llmConfig.model,
+                        messages: [
+                          { role: "system", content: systemPrompt },
+                          { role: "user", content: lang === "zh" ? "请随机生成一个故事前提" : "Generate a random story premise" },
+                        ],
+                        max_tokens: 200,
+                        temperature: 1.2,
+                      }),
+                    });
+                    if (!res.ok) throw new Error("API error");
+                    const data = await res.json();
+                    const raw = data.choices?.[0]?.message?.content?.trim() || "";
+                    // Strip common prefixes like "Story Premise:" or "故事前提："
+                    const text = raw.replace(/^(story premise|故事前提|premise)[：:]\s*/i, "").replace(/^["「]|["」]$/g, "").trim();
+                    if (text) setPremise(text);
+                  } catch {
+                    toast.error(t("create.premise.genFailed", lang));
+                  } finally {
+                    setIsGenerating(false);
+                  }
+                }}
+                disabled={isGenerating}
+                className="absolute bottom-3 right-3 w-9 h-9 p-0 rounded-lg text-accent hover:bg-accent/10 hover:text-accent"
+                title={t("create.premise.aiGenerate", lang)}
+              >
+                {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
+              </Button>
+            </div>
           </section>
 
           {/* Duration */}
