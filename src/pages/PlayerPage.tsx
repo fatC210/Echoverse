@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { t } from "@/lib/i18n";
 import { useSettingsStore } from "@/lib/store/settings-store";
@@ -291,6 +291,7 @@ const StoryEndScreen = ({
 const PlayerPage = () => {
   const navigate = useNavigate();
   const { storyId } = useParams();
+  const [searchParams] = useSearchParams();
   const lang = useSettingsStore((s) => s.preferences.interfaceLang);
   const storyLang = useSettingsStore((s) => s.preferences.storyLang);
 
@@ -610,7 +611,7 @@ const PlayerPage = () => {
   const [narrationText, setNarrationText] = useState(currentScene.narration);
   const [isTyping, setIsTyping] = useState(true);
   const [showChoices, setShowChoices] = useState(false);
-  const [showEndScreen, setShowEndScreen] = useState(false);
+  const [showEndScreen, setShowEndScreen] = useState(searchParams.get("view") === "summary");
   const [storyLog, setStoryLog] = useState<StoryEntry[]>([{ chapter: currentScene.chapter, narration: currentScene.narration }]);
   const [chapterTitle, setChapterTitle] = useState(currentScene.chapter);
   const [volumes, setVolumes] = useState({ master: 1, narration: 1, sfx: 0.7, music: 0.4 });
