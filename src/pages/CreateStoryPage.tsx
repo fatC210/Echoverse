@@ -204,7 +204,7 @@ const CreateStoryPage = () => {
                   disabled={!customInput.trim()}
                   className="border-accent/30 hover:border-accent/60 hover:bg-accent/5"
                 >
-                  <Plus size={14} className="mr-1" /> {t("create.tags.add", lang)}
+                  {t("create.tags.add", lang)}
                 </Button>
               </div>
               {customTags.length > 0 && (
