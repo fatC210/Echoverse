@@ -394,7 +394,7 @@ const PlayerPage = () => {
             )}
           </div>
           <div className="relative">
-            <Button variant="ghost" size="sm" onClick={() => setShowVolume(!showVolume)} className="text-muted-foreground">
+            <Button variant="ghost" size="sm" onClick={() => { setShowVolume(!showVolume); setShowWorldPanel(false); setShowVoicePanel(false); }} className="text-muted-foreground">
               <Volume2 size={14} /><span className="ml-1 text-xs hidden md:inline">{t("player.volume", lang)}</span>
             </Button>
             {showVolume && (
