@@ -297,10 +297,18 @@ const PlayerPage = () => {
   const [mood, setMood] = useState<MoodType>("mystery");
   const [currentSceneId, setCurrentSceneId] = useState("start");
 
-  // Scene graph: each choice's `next` points to another scene ID
+  // Shuffle and pick N items from array
+  const pickRandom = useCallback(<T,>(arr: T[], n: number): T[] => {
+    const shuffled = [...arr].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, n);
+  }, []);
+
+  type ChoiceItem = { id: string; label: string; text: string; hint: string; next?: string };
+
+  // Scene graph: each scene has 5 choices, we randomly pick 3
   const sceneGraph: Record<string, {
     narration: string; chapter: string; mood: MoodType;
-    choices: { id: string; label: string; text: string; hint: string; next?: string }[];
+    choices: ChoiceItem[];
   }> = useMemo(() => storyLang === "zh" ? {
     start: {
       narration: "你缓缓睁开双眼。刺眼的荧光灯直射瞳孔。空气尝起来发霉，被循环了太多次。远处机器的低沉嗡鸣填满了寂静——这是一座本该在数年前就被废弃的空间站的心跳声。",
@@ -309,6 +317,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "查看电脑终端", hint: "也许日志能解释发生了什么……", next: "terminal" },
         { id: "b", label: "B", text: "沿着走廊追寻声音", hint: "还有其他人活着吗？", next: "corridor" },
         { id: "c", label: "C", text: "尝试修复通讯手环", hint: "我需要让人知道我还活着", next: "bracelet" },
+        { id: "d", label: "D", text: "检查自己的身体状况", hint: "我的头很痛……发生了什么？", next: "terminal" },
+        { id: "e", label: "E", text: "寻找最近的逃生舱", hint: "先确保有退路", next: "corridor" },
       ],
     },
     terminal: {
@@ -318,6 +328,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "搜索更多日志记录", hint: "真相或许藏在数据中……", next: "logs" },
         { id: "b", label: "B", text: "前往生物实验室", hint: "被收容的到底是什么？", next: "lab" },
         { id: "c", label: "C", text: "启动紧急广播系统", hint: "也许有人还在监听", next: "broadcast" },
+        { id: "d", label: "D", text: "查找船员生存记录", hint: "有没有人还活着？", next: "logs" },
+        { id: "e", label: "E", text: "下载数据到便携设备", hint: "先备份证据再说", next: "broadcast" },
       ],
     },
     corridor: {
@@ -327,6 +339,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "靠近并呼唤对方", hint: "也许他需要帮助", next: "survivor" },
         { id: "b", label: "B", text: "保持距离观察", hint: "先确认安全再说", next: "observe" },
         { id: "c", label: "C", text: "悄悄离开", hint: "直觉告诉你这里不安全", next: "flee" },
+        { id: "d", label: "D", text: "用手电筒照向对方", hint: "先看清楚再做决定", next: "observe" },
+        { id: "e", label: "E", text: "模仿他的敲击节奏", hint: "也许这是某种暗号", next: "survivor" },
       ],
     },
     bracelet: {
@@ -336,6 +350,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "尝试短路重启", hint: "也许能发出一次信号", next: "signal" },
         { id: "b", label: "B", text: "检查霜花来源", hint: "这不像是普通的结冰……", next: "frost" },
         { id: "c", label: "C", text: "拆下电池另作他用", hint: "也许有更需要电力的地方", next: "battery" },
+        { id: "d", label: "D", text: "用体温融化霜花", hint: "也许能恢复电路功能", next: "frost" },
+        { id: "e", label: "E", text: "寻找其他通讯设备", hint: "这个手环可能无法修复", next: "signal" },
       ],
     },
     logs: {
@@ -345,6 +361,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "寻找有机体样本", hint: "如果它想交流，也许我应该回应" },
         { id: "b", label: "B", text: "删除所有数据并撤离", hint: "有些知识太危险了" },
         { id: "c", label: "C", text: "将数据发送至地球", hint: "让人类自己做决定" },
+        { id: "d", label: "D", text: "寻找最后幸存的船员", hint: "也许有人与它成功交流过" },
+        { id: "e", label: "E", text: "在日志中搜索弱点", hint: "以防需要摧毁它" },
       ],
     },
     lab: {
@@ -354,6 +372,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "采集藤蔓样本", hint: "了解你的敌人" },
         { id: "b", label: "B", text: "立即撤退并封锁实验室", hint: "有些东西不该被打扰" },
         { id: "c", label: "C", text: "尝试与它沟通", hint: "它在呼吸……也许它有意识？" },
+        { id: "d", label: "D", text: "用火焰灼烧藤蔓", hint: "把它们全部烧掉" },
+        { id: "e", label: "E", text: "记录它们的生长规律", hint: "也许能找到控制它的方法" },
       ],
     },
     broadcast: {
@@ -363,6 +383,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "模仿它的节律回应", hint: "也许这是某种语言" },
         { id: "b", label: "B", text: "切断广播并逃离", hint: "不知道对面是什么" },
         { id: "c", label: "C", text: "发送地球坐标", hint: "无论是什么，让它知道我们在哪" },
+        { id: "d", label: "D", text: "录下脉冲信号", hint: "带回去分析" },
+        { id: "e", label: "E", text: "尝试用数学公式回复", hint: "数学是宇宙通用语言" },
       ],
     },
     survivor: {
@@ -372,6 +394,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "询问「它」是什么", hint: "也许他知道真相" },
         { id: "b", label: "B", text: "带他一起离开", hint: "先撤离再说" },
         { id: "c", label: "C", text: "检查他是否已被感染", hint: "他看起来不太对劲……" },
+        { id: "d", label: "D", text: "给他水和食物", hint: "他看起来快要虚脱了" },
+        { id: "e", label: "E", text: "询问其他船员的下落", hint: "也许还有其他人活着" },
       ],
     },
     observe: {
@@ -381,6 +405,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "转身逃跑", hint: "这不是人类了" },
         { id: "b", label: "B", text: "试图交谈", hint: "他……它似乎没有敌意" },
         { id: "c", label: "C", text: "寻找武器", hint: "以防万一" },
+        { id: "d", label: "D", text: "用灯光照射它", hint: "看看它对光有什么反应" },
+        { id: "e", label: "E", text: "拍下照片留作证据", hint: "无论发生什么，要留下记录" },
       ],
     },
     flee: {
@@ -390,6 +416,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "继续跑向逃生舱", hint: "不管了，先离开这里" },
         { id: "b", label: "B", text: "躲进最近的舱室", hint: "也许它会错过你" },
         { id: "c", label: "C", text: "停下来面对它", hint: "逃跑似乎没有用" },
+        { id: "d", label: "D", text: "制造噪音吸引它到别处", hint: "声东击西" },
+        { id: "e", label: "E", text: "启动走廊的应急照明", hint: "也许光能驱退它" },
       ],
     },
     signal: {
@@ -399,6 +427,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "循着声音去查看", hint: "必须知道发生了什么" },
         { id: "b", label: "B", text: "立即前往逃生舱", hint: "时间不多了" },
         { id: "c", label: "C", text: "再次发送信号", hint: "也许能与外界取得联系" },
+        { id: "d", label: "D", text: "关闭所有电力系统", hint: "让一切恢复沉寂" },
+        { id: "e", label: "E", text: "用手环追踪信号源", hint: "找到它的位置" },
       ],
     },
     frost: {
@@ -408,6 +438,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "让它继续蔓延", hint: "也许这就是「它」交流的方式" },
         { id: "b", label: "B", text: "甩掉并后退", hint: "不知道这东西会做什么" },
         { id: "c", label: "C", text: "对着它说话", hint: "如果它有意识，也许能理解" },
+        { id: "d", label: "D", text: "闭上眼睛感受它", hint: "放下戒备，用心感知" },
+        { id: "e", label: "E", text: "引导它蔓延到手环上", hint: "也许它能修复设备" },
       ],
     },
     battery: {
@@ -417,6 +449,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "把电池装回去", hint: "也许取出电池触发了什么" },
         { id: "b", label: "B", text: "带着电池前往控制室", hint: "也许能用它启动什么" },
         { id: "c", label: "C", text: "丢掉电池并逃跑", hint: "这东西不对劲" },
+        { id: "d", label: "D", text: "跟随心跳声寻找源头", hint: "它来自空间站深处" },
+        { id: "e", label: "E", text: "用电池给通讯系统供电", hint: "最后的机会发出求救信号" },
       ],
     },
   } : {
@@ -427,6 +461,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "Check the computer terminal", hint: "Maybe the logs can explain what happened...", next: "terminal" },
         { id: "b", label: "B", text: "Follow the sound down the corridor", hint: "Is someone else still alive?", next: "corridor" },
         { id: "c", label: "C", text: "Try to repair the comm bracelet", hint: "I need to let someone know I'm alive", next: "bracelet" },
+        { id: "d", label: "D", text: "Check your physical condition", hint: "My head hurts... what happened?", next: "terminal" },
+        { id: "e", label: "E", text: "Find the nearest escape pod", hint: "Better have an exit plan first", next: "corridor" },
       ],
     },
     terminal: {
@@ -436,6 +472,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "Search for more log entries", hint: "The truth might be hidden in the data...", next: "logs" },
         { id: "b", label: "B", text: "Head to the bio-lab", hint: "What exactly was contained?", next: "lab" },
         { id: "c", label: "C", text: "Activate the emergency broadcast", hint: "Maybe someone is still listening", next: "broadcast" },
+        { id: "d", label: "D", text: "Search for crew survival records", hint: "Is anyone still alive?", next: "logs" },
+        { id: "e", label: "E", text: "Download data to a portable device", hint: "Back up the evidence first", next: "broadcast" },
       ],
     },
     corridor: {
@@ -445,6 +483,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "Approach and call out", hint: "Maybe they need help", next: "survivor" },
         { id: "b", label: "B", text: "Observe from a distance", hint: "Better safe than sorry", next: "observe" },
         { id: "c", label: "C", text: "Quietly leave", hint: "Your instincts say it's not safe", next: "flee" },
+        { id: "d", label: "D", text: "Shine your flashlight at them", hint: "Get a clear look first", next: "observe" },
+        { id: "e", label: "E", text: "Mimic their tapping rhythm", hint: "Maybe it's some kind of code", next: "survivor" },
       ],
     },
     bracelet: {
@@ -454,6 +494,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "Try a short-circuit reboot", hint: "Maybe you can send one signal", next: "signal" },
         { id: "b", label: "B", text: "Examine the frost", hint: "This doesn't look like normal ice...", next: "frost" },
         { id: "c", label: "C", text: "Remove the battery for other use", hint: "Maybe something else needs power more", next: "battery" },
+        { id: "d", label: "D", text: "Warm it with body heat", hint: "Maybe the circuit will recover", next: "frost" },
+        { id: "e", label: "E", text: "Look for another comm device", hint: "This one might be beyond repair", next: "signal" },
       ],
     },
     logs: {
@@ -463,6 +505,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "Seek out the organism", hint: "If it wants to communicate, maybe I should respond" },
         { id: "b", label: "B", text: "Delete all data and evacuate", hint: "Some knowledge is too dangerous" },
         { id: "c", label: "C", text: "Transmit data to Earth", hint: "Let humanity decide" },
+        { id: "d", label: "D", text: "Find the last surviving crew", hint: "Maybe someone successfully communicated with it" },
+        { id: "e", label: "E", text: "Search the logs for weaknesses", hint: "In case you need to destroy it" },
       ],
     },
     lab: {
@@ -472,6 +516,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "Collect a vine sample", hint: "Know your enemy" },
         { id: "b", label: "B", text: "Retreat and seal the lab", hint: "Some things should stay undisturbed" },
         { id: "c", label: "C", text: "Try to communicate with it", hint: "It's breathing... maybe it's conscious?" },
+        { id: "d", label: "D", text: "Burn the vines with a torch", hint: "Destroy them all" },
+        { id: "e", label: "E", text: "Study their growth patterns", hint: "Maybe you can find a way to control them" },
       ],
     },
     broadcast: {
@@ -481,6 +527,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "Mimic its rhythm", hint: "Maybe this is a language" },
         { id: "b", label: "B", text: "Cut the broadcast and run", hint: "You don't know what's on the other end" },
         { id: "c", label: "C", text: "Send Earth's coordinates", hint: "Whatever it is, let it know where we are" },
+        { id: "d", label: "D", text: "Record the pulse signal", hint: "Bring it back for analysis" },
+        { id: "e", label: "E", text: "Reply with math formulas", hint: "Math is the universal language" },
       ],
     },
     survivor: {
@@ -490,6 +538,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "Ask what 'it' is", hint: "Maybe he knows the truth" },
         { id: "b", label: "B", text: "Take him and leave", hint: "Evacuate first, questions later" },
         { id: "c", label: "C", text: "Check if he's infected", hint: "Something seems off about him..." },
+        { id: "d", label: "D", text: "Give him water and food", hint: "He looks like he's about to collapse" },
+        { id: "e", label: "E", text: "Ask about the other crew", hint: "Maybe others are still alive" },
       ],
     },
     observe: {
@@ -499,6 +549,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "Turn and run", hint: "That's not human anymore" },
         { id: "b", label: "B", text: "Try to talk", hint: "They... it seems non-hostile" },
         { id: "c", label: "C", text: "Look for a weapon", hint: "Just in case" },
+        { id: "d", label: "D", text: "Shine a light on it", hint: "See how it reacts to light" },
+        { id: "e", label: "E", text: "Take a photo as evidence", hint: "Whatever happens, leave a record" },
       ],
     },
     flee: {
@@ -508,6 +560,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "Keep running to the escape pod", hint: "Just get out of here" },
         { id: "b", label: "B", text: "Hide in the nearest cabin", hint: "Maybe it will pass" },
         { id: "c", label: "C", text: "Stop and face it", hint: "Running doesn't seem to work" },
+        { id: "d", label: "D", text: "Make noise to lure it elsewhere", hint: "Create a diversion" },
+        { id: "e", label: "E", text: "Activate corridor emergency lights", hint: "Maybe light can repel it" },
       ],
     },
     signal: {
@@ -517,6 +571,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "Follow the sound", hint: "Need to know what happened" },
         { id: "b", label: "B", text: "Head to the escape pod", hint: "Time is running out" },
         { id: "c", label: "C", text: "Send the signal again", hint: "Maybe you can reach the outside" },
+        { id: "d", label: "D", text: "Shut down all power systems", hint: "Let everything go silent again" },
+        { id: "e", label: "E", text: "Use the bracelet to track the source", hint: "Find where it's coming from" },
       ],
     },
     frost: {
@@ -526,6 +582,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "Let it spread", hint: "Maybe this is how 'it' communicates" },
         { id: "b", label: "B", text: "Shake it off and back away", hint: "Don't know what this thing does" },
         { id: "c", label: "C", text: "Speak to it", hint: "If it's conscious, maybe it understands" },
+        { id: "d", label: "D", text: "Close your eyes and feel it", hint: "Let go of fear and sense it" },
+        { id: "e", label: "E", text: "Guide it onto the bracelet", hint: "Maybe it can repair the device" },
       ],
     },
     battery: {
@@ -535,11 +593,20 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "Put the battery back", hint: "Maybe removing it triggered something" },
         { id: "b", label: "B", text: "Take the battery to the control room", hint: "Maybe you can use it to power something" },
         { id: "c", label: "C", text: "Drop it and run", hint: "Something is very wrong" },
+        { id: "d", label: "D", text: "Follow the heartbeat to its source", hint: "It's coming from deep within" },
+        { id: "e", label: "E", text: "Power the comm system with it", hint: "Last chance for a distress signal" },
       ],
     },
   }, [storyLang]);
 
   const currentScene = sceneGraph[currentSceneId];
+
+  // Randomly pick 3 choices from 5 and relabel them A/B/C
+  const [activeChoices, setActiveChoices] = useState<ChoiceItem[]>(() => {
+    const picked = pickRandom(currentScene.choices, 3);
+    return picked.map((c, i) => ({ ...c, label: ["A", "B", "C"][i], id: ["a", "b", "c"][i] }));
+  });
+
   const [narrationText, setNarrationText] = useState(currentScene.narration);
   const [isTyping, setIsTyping] = useState(true);
   const [showChoices, setShowChoices] = useState(false);
@@ -565,7 +632,7 @@ const PlayerPage = () => {
   const handleChoice = useCallback((choiceId: string, text?: string) => {
     setShowChoices(false);
 
-    const chosenOption = currentScene.choices.find(c => c.id === choiceId);
+    const chosenOption = activeChoices.find(c => c.id === choiceId);
     const choiceText = text || chosenOption?.text || choiceId;
 
     setStoryLog(prev => {
@@ -576,7 +643,6 @@ const PlayerPage = () => {
 
     const nextId = chosenOption?.next;
     if (!nextId || !sceneGraph[nextId]) {
-      // No next scene — story ends
       setShowEndScreen(true);
       return;
     }
@@ -588,7 +654,11 @@ const PlayerPage = () => {
     setNarrationText(nextScene.narration);
     setChapterTitle(nextScene.chapter);
     setStoryLog(prev => [...prev, { chapter: nextScene.chapter, narration: nextScene.narration }]);
-  }, [currentSceneId, sceneGraph, currentScene]);
+
+    // Pick new random choices for the next scene
+    const picked = pickRandom(nextScene.choices, 3);
+    setActiveChoices(picked.map((c, i) => ({ ...c, label: ["A", "B", "C"][i], id: ["a", "b", "c"][i] })));
+  }, [activeChoices, sceneGraph, pickRandom]);
   const handleVolumeChange = (key: string, val: number) => {
     setVolumes((prev) => ({ ...prev, [key]: val }));
   };
@@ -673,7 +743,7 @@ const PlayerPage = () => {
         <AnimatePresence>
           {showChoices && (
             <ChoicePanel
-              choices={currentScene.choices}
+              choices={activeChoices}
               onSelect={handleChoice}
               countdown={45}
             />
