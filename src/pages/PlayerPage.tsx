@@ -50,7 +50,7 @@ const NarrationDisplay = ({ text, isTyping }: { text: string; isTyping: boolean 
       <p className="narration-text text-foreground/90 leading-relaxed">
         {displayedText}
         {isTyping && displayedText.length < text.length && (
-          <span className="inline-block w-[2px] h-5 bg-primary ml-1 animate-pulse" />
+          <span className="inline-block w-[2px] h-5 bg-accent ml-1 animate-pulse" />
         )}
       </p>
     </div>
@@ -109,14 +109,14 @@ const ChoicePanel = ({
         <button
           key={c.id}
           onClick={() => onSelect(c.id)}
-          className="w-full text-left p-4 rounded-xl border border-border hover:border-primary/50 bg-card/60 backdrop-blur-sm transition-all hover:bg-card/80 group"
+          className="w-full text-left p-4 rounded-xl border border-border hover:border-accent/50 bg-card/60 backdrop-blur-sm transition-all hover:bg-card/80 group"
         >
           <div className="flex items-start gap-3">
-            <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary/20 text-primary flex items-center justify-center text-sm font-bold">
+            <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-accent/20 text-accent flex items-center justify-center text-sm font-bold">
               {c.label}
             </span>
             <div>
-              <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{c.text}</p>
+              <p className="text-sm font-medium text-foreground group-hover:text-accent transition-colors">{c.text}</p>
               <p className="text-xs text-muted-foreground mt-1">{c.hint}</p>
             </div>
           </div>
@@ -134,7 +134,7 @@ const ChoicePanel = ({
           />
           <button
             onClick={() => { if (freeText.trim()) onSelect("free", freeText); }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-accent"
           >
             <Send size={16} />
           </button>

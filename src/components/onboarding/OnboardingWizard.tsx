@@ -28,9 +28,9 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
       {/* Ambient background */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5 animate-drift" />
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: "4s" }} />
+        <div className="absolute inset-0 bg-background" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-pulse-slow" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/3 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: "4s" }} />
       </div>
 
       {/* Progress bar */}
@@ -41,7 +41,7 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
           </div>
           <div className="h-1 bg-muted rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
+              className="h-full bg-accent rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${(step / 3) * 100}%` }}
               transition={{ duration: 0.5 }}

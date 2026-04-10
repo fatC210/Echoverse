@@ -106,7 +106,7 @@ const LlmConfigStep = ({ onNext, onBack, lang }: LlmConfigStepProps) => {
 
       <div className="flex justify-between pt-2">
         <Button variant="ghost" onClick={onBack}>{t("onboarding.back", lang)}</Button>
-        <Button onClick={onNext} disabled={!canProceed} className="bg-gradient-to-r from-primary to-accent text-primary-foreground">
+        <Button onClick={onNext} disabled={!canProceed} className="bg-accent hover:bg-accent/90 text-accent-foreground">
           {t("onboarding.next", lang)}
         </Button>
       </div>

@@ -59,15 +59,6 @@ const TurbopufferConfigStep = ({ onNext, onBack, lang }: TurbopufferConfigStepPr
           <p className="text-xs text-muted-foreground mt-1">💡 {t("onboarding.turbopuffer.hint", lang)}</p>
         </div>
 
-        <div>
-          <Label className="text-sm text-muted-foreground">{t("onboarding.turbopuffer.baseUrl", lang)}</Label>
-          <Input
-            value={turbopuffer.baseUrl}
-            onChange={(e) => updateTurbopuffer({ baseUrl: e.target.value })}
-            className="bg-secondary border-border mt-1"
-          />
-        </div>
-
         <div className="flex items-center gap-3">
           <Button variant="outline" onClick={testConnection} disabled={!turbopuffer.apiKey || testStatus === "testing"}>
             {testStatus === "testing" && <Loader2 size={14} className="mr-1 animate-spin" />}
@@ -88,7 +79,7 @@ const TurbopufferConfigStep = ({ onNext, onBack, lang }: TurbopufferConfigStepPr
 
       <div className="flex justify-between pt-2">
         <Button variant="ghost" onClick={onBack}>{t("onboarding.back", lang)}</Button>
-        <Button onClick={onNext} disabled={!canProceed} className="bg-gradient-to-r from-primary to-accent text-primary-foreground">
+        <Button onClick={onNext} disabled={!canProceed} className="bg-accent hover:bg-accent/90 text-accent-foreground">
           {t("onboarding.finish", lang)}
         </Button>
       </div>

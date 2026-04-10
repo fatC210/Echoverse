@@ -74,14 +74,14 @@ const CreateStoryPage = () => {
     return (
       <div className="fixed inset-0 bg-background flex items-center justify-center">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10 animate-drift" />
+          <div className="absolute inset-0 bg-background" />
         </div>
         <motion.div
           className="relative z-10 text-center space-y-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
-          <Loader2 size={48} className="mx-auto text-primary animate-spin" />
+          <Loader2 size={48} className="mx-auto text-accent animate-spin" />
           <div className="space-y-3">
             {[
               { step: 1, text: t("create.loading.world", lang) },
@@ -129,7 +129,7 @@ const CreateStoryPage = () => {
               onChange={(e) => setPremise(e.target.value)}
               placeholder={t("create.premise.placeholder", lang)}
               rows={4}
-              className="w-full bg-secondary border border-border rounded-lg p-4 text-foreground placeholder:text-muted-foreground/60 resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary/50 font-serif"
+              className="w-full bg-secondary border border-border rounded-lg p-4 text-foreground placeholder:text-muted-foreground/60 resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-accent/50 font-serif"
             />
           </section>
 
@@ -161,7 +161,7 @@ const CreateStoryPage = () => {
                         onClick={() => toggleTag(option.id)}
                         className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${
                           selectedTags.includes(option.id)
-                            ? "bg-primary/20 border-primary/50 text-foreground"
+                            ? "bg-accent/20 border-accent/50 text-foreground"
                             : "border-border hover:border-muted-foreground/50 text-muted-foreground"
                         }`}
                       >
@@ -195,7 +195,7 @@ const CreateStoryPage = () => {
                   {customTags.map((tag) => (
                     <span
                       key={tag}
-                      className="px-3 py-1.5 rounded-lg text-sm bg-primary/20 border border-primary/50 text-foreground flex items-center gap-1"
+                      className="px-3 py-1.5 rounded-lg text-sm bg-accent/20 border border-accent/50 text-foreground flex items-center gap-1"
                     >
                       {tag}
                       <button onClick={() => removeCustomTag(tag)} className="ml-1 hover:text-destructive">
@@ -240,7 +240,7 @@ const CreateStoryPage = () => {
                   onClick={() => setDuration(opt.id)}
                   className={`w-full text-left p-3 rounded-lg border transition-all ${
                     duration === opt.id
-                      ? "bg-primary/20 border-primary/50"
+                      ? "bg-accent/20 border-accent/50"
                       : "border-border hover:border-muted-foreground/50"
                   }`}
                 >
@@ -258,7 +258,7 @@ const CreateStoryPage = () => {
             onClick={startJourney}
             disabled={!premise.trim()}
             size="lg"
-            className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 text-primary-foreground py-6 text-lg glow-primary"
+            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground py-6 text-lg glow-accent"
           >
             {t("create.start", lang)}
           </Button>

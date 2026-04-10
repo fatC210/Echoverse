@@ -13,9 +13,9 @@ const HeroSection = () => {
     <section className="relative min-h-[80vh] flex flex-col items-center justify-center text-center px-4 overflow-hidden">
       {/* Ambient bg */}
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background" />
-        <div className="absolute top-20 left-1/3 w-[500px] h-[500px] bg-primary/8 rounded-full blur-[100px] animate-pulse-slow" />
-        <div className="absolute bottom-20 right-1/3 w-[400px] h-[400px] bg-accent/8 rounded-full blur-[100px] animate-pulse-slow" style={{ animationDelay: "4s" }} />
+        <div className="absolute inset-0 bg-background" />
+        <div className="absolute top-20 left-1/3 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[100px] animate-pulse-slow" />
+        <div className="absolute bottom-20 right-1/3 w-[400px] h-[400px] bg-accent/3 rounded-full blur-[100px] animate-pulse-slow" style={{ animationDelay: "4s" }} />
       </div>
 
       <motion.div
@@ -25,7 +25,7 @@ const HeroSection = () => {
         transition={{ duration: 0.8 }}
       >
         <motion.div
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-sm text-primary mb-8"
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-sm text-accent mb-8"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
@@ -45,7 +45,7 @@ const HeroSection = () => {
         <Button
           onClick={() => navigate("/create")}
           size="lg"
-          className="bg-gradient-to-r from-primary to-accent hover:opacity-90 text-primary-foreground px-8 py-6 text-lg glow-primary"
+          className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-6 text-lg glow-accent"
         >
           {t("home.hero.cta.new", lang)}
           <ArrowRight className="ml-2" size={20} />
@@ -77,7 +77,7 @@ const FeatureCards = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 + i * 0.15 }}
-            className="glass-panel p-6 text-center hover:border-primary/30 transition-colors group"
+            className="glass-panel p-6 text-center hover:border-accent/30 transition-colors group"
           >
             <div className="text-4xl mb-4">{f.emoji}</div>
             <h3 className="text-lg font-semibold font-serif mb-2 group-hover:text-gradient-primary transition-colors">
