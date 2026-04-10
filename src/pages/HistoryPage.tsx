@@ -83,10 +83,10 @@ const HistoryPage = () => {
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft size={16} />
           </Button>
-          <h1 className="text-2xl font-bold font-serif">{t("history.title", lang)}</h1>
+          <h1 className="text-2xl font-bold font-serif text-accent">{t("history.title", lang)}</h1>
         </div>
 
         {stories.length === 0 ? (
