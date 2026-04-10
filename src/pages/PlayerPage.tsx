@@ -280,6 +280,8 @@ const PlayerPage = () => {
   const [isTyping, setIsTyping] = useState(true);
   const [showChoices, setShowChoices] = useState(false);
   const [showVolume, setShowVolume] = useState(false);
+  const [showWorldPanel, setShowWorldPanel] = useState(false);
+  const [showVoicePanel, setShowVoicePanel] = useState(false);
   const [showEndScreen, setShowEndScreen] = useState(false);
   const [chapterTitle, setChapterTitle] = useState(storyLang === "zh" ? "第一章：苏醒" : "Chapter 1: Awakening");
   const [volumes, setVolumes] = useState({ master: 1, narration: 1, sfx: 0.7, music: 0.4 });
