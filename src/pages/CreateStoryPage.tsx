@@ -7,8 +7,14 @@ import { STORY_TAGS, type TagCategory } from "@/lib/constants/story-tags";
 import { DURATION_OPTIONS } from "@/lib/constants/defaults";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, X, Loader2, ChevronDown, ChevronUp, Plus, Headphones, Wand2 } from "lucide-react";
+import { ArrowLeft, X, Loader2, ChevronDown, ChevronUp, Plus, Headphones, Wand2, Globe, Heart, Users, PenLine } from "lucide-react";
 import { toast } from "sonner";
+
+const TAG_ICONS: Record<string, React.ReactNode> = {
+  world: <Globe size={14} />,
+  mood: <Heart size={14} />,
+  protagonist: <Users size={14} />,
+};
 
 const CreateStoryPage = () => {
   const navigate = useNavigate();
@@ -151,7 +157,7 @@ const CreateStoryPage = () => {
                     onClick={() => toggleCategory(category)}
                     className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-accent transition-colors"
                   >
-                    <span>{cat.icon}</span>
+                    {TAG_ICONS[category] || <Globe size={14} />}
                     <span>{cat.label[lang]}</span>
                     {cat.options.length > 7 && (
                       isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />
@@ -179,7 +185,7 @@ const CreateStoryPage = () => {
             {/* Custom tags */}
             <div className="space-y-2">
               <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                ✏️ {t("create.tags.custom", lang)}
+                <PenLine size={14} /> {t("create.tags.custom", lang)}
               </span>
               <div className="flex gap-2">
                 <Input
