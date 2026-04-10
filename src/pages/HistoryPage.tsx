@@ -109,7 +109,7 @@ const HistoryPage = () => {
                       ? "bg-emerald-500/20 text-emerald-400"
                       : "bg-accent/20 text-accent"
                   }`}>
-                    {story.status === "completed" ? "✓" : "▶"}
+                    {story.status === "completed" ? t("history.status.completed", lang) : t("history.status.playing", lang)}
                   </span>
                 </div>
 
