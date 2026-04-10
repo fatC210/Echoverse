@@ -471,7 +471,7 @@ const PlayerPage = () => {
         <AnimatePresence>
           {showChoices && (
             <ChoicePanel
-              choices={choices}
+              choices={currentScene.choices}
               onSelect={handleChoice}
               countdown={45}
             />
