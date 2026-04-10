@@ -90,7 +90,7 @@ interface Choice {
 const ChoicePanel = ({
   choices,
   onSelect,
-  countdown,
+  countdown: initialCountdown,
 }: {
   choices: Choice[];
   onSelect: (choiceId: string, text?: string) => void;
@@ -98,6 +98,24 @@ const ChoicePanel = ({
 }) => {
   const lang = useSettingsStore((s) => s.preferences.interfaceLang);
   const [freeText, setFreeText] = useState("");
+  const [timeLeft, setTimeLeft] = useState(initialCountdown);
+
+  useEffect(() => {
+    setTimeLeft(initialCountdown);
+    if (initialCountdown <= 0) return;
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          // Auto-select first choice when time runs out
+          onSelect(choices[0]?.id || "free");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [initialCountdown, choices, onSelect]);
 
   return (
     <motion.div
@@ -141,9 +159,9 @@ const ChoicePanel = ({
         </div>
       </div>
 
-      {countdown > 0 && (
+      {timeLeft > 0 && (
         <p className="text-xs text-center text-muted-foreground">
-          ⏳ {t("player.autoSelect", lang)}: {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, "0")}
+          ⏳ {t("player.autoSelect", lang)}: {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
         </p>
       )}
     </motion.div>
