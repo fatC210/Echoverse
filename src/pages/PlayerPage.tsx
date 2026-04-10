@@ -392,12 +392,12 @@ const PlayerPage = () => {
       {/* End screen */}
       {showEndScreen && (
         <StoryEndScreen
-          title="Echo Station"
-          endingName="Symbiosis"
+          title={storyLang === "zh" ? "回声空间站" : "Echo Station"}
+          endingName={storyLang === "zh" ? "共生" : "Symbiosis"}
           stats={{
             duration: "23:47",
             decisions: 7,
-            audioLayers: "32 SFX + 6 Music + 10 Narration",
+            audioLayers: storyLang === "zh" ? "32 音效 + 6 配乐 + 10 旁白" : "32 SFX + 6 Music + 10 Narration",
             cacheHit: "42% (13/31)",
           }}
           onAction={handleEndAction}
