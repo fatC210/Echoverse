@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { t } from "@/lib/i18n";
@@ -380,11 +380,11 @@ const PlayerPage = () => {
   const [chapterTitle, setChapterTitle] = useState(currentScene.chapter);
   const [volumes, setVolumes] = useState({ master: 1, narration: 1, sfx: 0.7, music: 0.4 });
 
-  const audioLayers = [
+  const audioLayers = useMemo(() => [
     { type: "sfx", name: storyLang === "zh" ? "雨声" : "Rain", active: true },
     { type: "music", name: storyLang === "zh" ? "氛围音乐" : "Ambient", active: true },
     { type: "tts", name: t("player.narrating", lang), active: true },
-  ];
+  ], [storyLang, lang]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
