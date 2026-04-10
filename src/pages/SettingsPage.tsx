@@ -68,7 +68,7 @@ const SettingsPage = () => {
 
   const TestButton = ({ status, onTest }: { status: string; onTest: () => void }) => (
     <div className="flex items-center gap-2">
-      <Button variant="outline" size="sm" onClick={onTest} disabled={status === "testing"} className="border-accent/30 hover:border-accent/60 hover:bg-accent/5">
+      <Button variant="outline" size="sm" onClick={onTest} disabled={status === "testing"} className="border-accent/30 text-foreground hover:border-accent/60 hover:bg-accent/10 hover:text-foreground">
         {status === "testing" && <Loader2 size={14} className="mr-1 animate-spin" />}
         {t("onboarding.testConnection", lang)}
       </Button>
