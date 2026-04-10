@@ -372,6 +372,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "采集藤蔓样本", hint: "了解你的敌人" },
         { id: "b", label: "B", text: "立即撤退并封锁实验室", hint: "有些东西不该被打扰" },
         { id: "c", label: "C", text: "尝试与它沟通", hint: "它在呼吸……也许它有意识？" },
+        { id: "d", label: "D", text: "用火焰灼烧藤蔓", hint: "把它们全部烧掉" },
+        { id: "e", label: "E", text: "记录它们的生长规律", hint: "也许能找到控制它的方法" },
       ],
     },
     broadcast: {
@@ -381,6 +383,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "模仿它的节律回应", hint: "也许这是某种语言" },
         { id: "b", label: "B", text: "切断广播并逃离", hint: "不知道对面是什么" },
         { id: "c", label: "C", text: "发送地球坐标", hint: "无论是什么，让它知道我们在哪" },
+        { id: "d", label: "D", text: "录下脉冲信号", hint: "带回去分析" },
+        { id: "e", label: "E", text: "尝试用数学公式回复", hint: "数学是宇宙通用语言" },
       ],
     },
     survivor: {
@@ -390,6 +394,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "询问「它」是什么", hint: "也许他知道真相" },
         { id: "b", label: "B", text: "带他一起离开", hint: "先撤离再说" },
         { id: "c", label: "C", text: "检查他是否已被感染", hint: "他看起来不太对劲……" },
+        { id: "d", label: "D", text: "给他水和食物", hint: "他看起来快要虚脱了" },
+        { id: "e", label: "E", text: "询问其他船员的下落", hint: "也许还有其他人活着" },
       ],
     },
     observe: {
@@ -399,6 +405,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "转身逃跑", hint: "这不是人类了" },
         { id: "b", label: "B", text: "试图交谈", hint: "他……它似乎没有敌意" },
         { id: "c", label: "C", text: "寻找武器", hint: "以防万一" },
+        { id: "d", label: "D", text: "用灯光照射它", hint: "看看它对光有什么反应" },
+        { id: "e", label: "E", text: "拍下照片留作证据", hint: "无论发生什么，要留下记录" },
       ],
     },
     flee: {
@@ -408,6 +416,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "继续跑向逃生舱", hint: "不管了，先离开这里" },
         { id: "b", label: "B", text: "躲进最近的舱室", hint: "也许它会错过你" },
         { id: "c", label: "C", text: "停下来面对它", hint: "逃跑似乎没有用" },
+        { id: "d", label: "D", text: "制造噪音吸引它到别处", hint: "声东击西" },
+        { id: "e", label: "E", text: "启动走廊的应急照明", hint: "也许光能驱退它" },
       ],
     },
     signal: {
@@ -417,6 +427,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "循着声音去查看", hint: "必须知道发生了什么" },
         { id: "b", label: "B", text: "立即前往逃生舱", hint: "时间不多了" },
         { id: "c", label: "C", text: "再次发送信号", hint: "也许能与外界取得联系" },
+        { id: "d", label: "D", text: "关闭所有电力系统", hint: "让一切恢复沉寂" },
+        { id: "e", label: "E", text: "用手环追踪信号源", hint: "找到它的位置" },
       ],
     },
     frost: {
@@ -426,6 +438,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "让它继续蔓延", hint: "也许这就是「它」交流的方式" },
         { id: "b", label: "B", text: "甩掉并后退", hint: "不知道这东西会做什么" },
         { id: "c", label: "C", text: "对着它说话", hint: "如果它有意识，也许能理解" },
+        { id: "d", label: "D", text: "闭上眼睛感受它", hint: "放下戒备，用心感知" },
+        { id: "e", label: "E", text: "引导它蔓延到手环上", hint: "也许它能修复设备" },
       ],
     },
     battery: {
@@ -435,6 +449,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "把电池装回去", hint: "也许取出电池触发了什么" },
         { id: "b", label: "B", text: "带着电池前往控制室", hint: "也许能用它启动什么" },
         { id: "c", label: "C", text: "丢掉电池并逃跑", hint: "这东西不对劲" },
+        { id: "d", label: "D", text: "跟随心跳声寻找源头", hint: "它来自空间站深处" },
+        { id: "e", label: "E", text: "用电池给通讯系统供电", hint: "最后的机会发出求救信号" },
       ],
     },
   } : {
