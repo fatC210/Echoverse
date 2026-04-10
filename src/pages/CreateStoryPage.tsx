@@ -71,6 +71,10 @@ const CreateStoryPage = () => {
   };
 
   const startJourney = async () => {
+    // If no premise entered, use placeholder
+    if (!premise.trim()) {
+      setPremise(t("create.premise.placeholder", lang));
+    }
     setIsLoading(true);
     setLoadingStep(1);
     setTimeout(() => setLoadingStep(2), 3000);
@@ -384,7 +388,7 @@ Output format: Output ONLY the premise text. No titles, prefixes, quotes, number
           {/* Start */}
           <Button
             onClick={startJourney}
-            disabled={!premise.trim()}
+            
             size="lg"
             className="w-full bg-accent hover:bg-accent/90 text-accent-foreground py-7 text-lg btn-game glow-accent-strong disabled:opacity-30 disabled:shadow-none"
           >
