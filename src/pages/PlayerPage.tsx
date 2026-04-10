@@ -409,8 +409,8 @@ const PlayerPage = () => {
       </motion.div>
 
       {/* Main content */}
-      <div className="relative z-20 flex-1 flex flex-col justify-center overflow-hidden">
-        <div className="flex-1 flex items-center py-8">
+      <div className="relative z-20 flex-1 min-h-0 flex flex-col justify-center">
+        <div className="flex-1 min-h-0 py-8">
           <NarrationDisplay text={narrationText} isTyping={isTyping} />
         </div>
       </div>
