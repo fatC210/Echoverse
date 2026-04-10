@@ -57,14 +57,16 @@ const NarrationDisplay = ({ text, isTyping }: { text: string; isTyping: boolean 
   );
 };
 
+const WAVE_HEIGHTS = [8, 14, 6, 16, 10, 12, 7, 15];
+
 const AudioLayerIndicator = ({ layers }: { layers: { type: string; name: string; active: boolean }[] }) => (
   <div className="flex items-center justify-center gap-4 px-4 py-1 text-muted-foreground">
     <div className="flex items-center gap-[1px] h-4">
-      {Array.from({ length: 8 }).map((_, i) => (
+      {WAVE_HEIGHTS.map((h, i) => (
         <div
           key={i}
           className="wave-bar"
-          style={{ animationDelay: `${i * 0.15}s`, height: `${4 + Math.random() * 12}px` }}
+          style={{ animationDelay: `${i * 0.15}s`, height: `${h}px` }}
         />
       ))}
     </div>
