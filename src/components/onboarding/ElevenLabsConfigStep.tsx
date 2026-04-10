@@ -1,11 +1,11 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useSettingsStore } from "@/lib/store/settings-store";
 import { ELEVENLABS_VOICES } from "@/lib/constants/defaults";
-import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Play, Square } from "lucide-react";
+import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Play, Square, Music, ArrowLeft, ArrowRight } from "lucide-react";
 
 interface ElevenLabsConfigStepProps {
   onNext: () => void;
@@ -66,95 +66,119 @@ const ElevenLabsConfigStep = ({ onNext, onBack, lang }: ElevenLabsConfigStepProp
   const canProceed = testStatus === "success" && hasVoice;
 
   return (
-    <div className="glass-panel p-8 space-y-5 max-h-[85vh] overflow-y-auto">
+    <div className="glass-panel-strong p-8 space-y-5 scanline max-h-[85vh] overflow-y-auto">
       <div className="flex items-center gap-3">
-        <span className="text-3xl">🎵</span>
-        <h2 className="text-2xl font-bold font-serif">{t("onboarding.elevenlabs.title", lang)}</h2>
+        <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center">
+          <Music size={20} className="text-accent" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold font-serif">{t("onboarding.elevenlabs.title", lang)}</h2>
+          <p className="text-xs text-muted-foreground">{t("onboarding.elevenlabs.hint", lang)}</p>
+        </div>
       </div>
 
       <div className="space-y-4">
         <div>
-          <Label className="text-sm text-muted-foreground">{t("onboarding.elevenlabs.apiKey", lang)}</Label>
-          <div className="relative mt-1">
+          <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase mb-1 block">
+            {t("onboarding.elevenlabs.apiKey", lang)}
+          </label>
+          <div className="relative">
             <Input
               type={showKey ? "text" : "password"}
               value={elevenlabs.apiKey}
               onChange={(e) => { updateElevenlabs({ apiKey: e.target.value }); setTestStatus("idle"); }}
-              className="bg-secondary border-border pr-10"
+              className="input-game pr-10"
             />
             <button
               type="button"
               onClick={() => setShowKey(!showKey)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-accent transition-colors"
             >
-              {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+              {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
             </button>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">💡 {t("onboarding.elevenlabs.hint", lang)}</p>
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={testConnection} disabled={!elevenlabs.apiKey || testStatus === "testing"}>
-            {testStatus === "testing" && <Loader2 size={14} className="mr-1 animate-spin" />}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={testConnection}
+            disabled={!elevenlabs.apiKey || testStatus === "testing"}
+            className="border-accent/30 hover:border-accent/60 hover:bg-accent/5"
+          >
+            {testStatus === "testing" && <Loader2 size={14} className="mr-1.5 animate-spin" />}
             {t("onboarding.testConnection", lang)}
           </Button>
           {testStatus === "success" && (
-            <span className="flex items-center gap-1 text-sm text-emerald-400">
-              <CheckCircle2 size={16} /> {t("onboarding.connected", lang)}
-            </span>
+            <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex items-center gap-1 text-xs text-accent">
+              <CheckCircle2 size={14} /> {t("onboarding.connected", lang)}
+            </motion.span>
           )}
           {testStatus === "error" && (
-            <span className="flex items-center gap-1 text-sm text-destructive">
-              <XCircle size={16} /> {t("onboarding.failed", lang)}
+            <span className="flex items-center gap-1 text-xs text-destructive">
+              <XCircle size={14} /> {t("onboarding.failed", lang)}
             </span>
           )}
         </div>
 
         {testStatus === "success" && (
-          <div className="border-t border-border pt-4">
-            <Label className="text-sm font-medium">{t("onboarding.elevenlabs.selectVoice", lang)}</Label>
-            <div className="space-y-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-secondary/50 p-2 mt-2">
-              {ELEVENLABS_VOICES.map((v) => (
-                <button
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="border-t border-border/30 pt-4"
+          >
+            <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase mb-3 block">
+              {t("onboarding.elevenlabs.selectVoice", lang)}
+            </label>
+            <div className="space-y-1.5 max-h-52 overflow-y-auto rounded-xl border border-border/30 bg-secondary/20 p-2">
+              {ELEVENLABS_VOICES.map((v, i) => (
+                <motion.button
                   key={v.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.04 }}
                   onClick={() => selectVoice(v)}
-                  className={`w-full flex items-center justify-between p-2.5 rounded-lg text-sm transition-colors ${
+                  className={`w-full flex items-center justify-between p-3 rounded-lg text-sm transition-all ${
                     voice.voiceId === v.id
-                      ? "bg-accent/20 border border-accent/50"
-                      : "hover:bg-muted"
+                      ? "bg-accent/15 border border-accent/40 glow-accent"
+                      : "hover:bg-muted/50 border border-transparent"
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className={`w-3 h-3 rounded-full border-2 ${
-                      voice.voiceId === v.id ? "bg-accent border-accent" : "border-muted-foreground"
+                    <div className={`w-2.5 h-2.5 rounded-full transition-all ${
+                      voice.voiceId === v.id ? "bg-accent status-dot" : "bg-muted-foreground/30"
                     }`} />
                     <span className="font-medium">{v.name}</span>
-                    <span className="text-muted-foreground">
-                      · {v.gender === "female" ? "♀" : "♂"} · {v.description[lang]}
+                    <span className="text-muted-foreground text-xs">
+                      {v.gender === "female" ? "♀" : "♂"} · {v.description[lang]}
                     </span>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={(e) => { e.stopPropagation(); previewVoice(v.id); }}
-                    className="h-7 px-2"
+                    className="h-7 px-2 text-muted-foreground hover:text-accent"
                   >
                     {playingVoice === v.id ? <Square size={12} /> : <Play size={12} />}
-                    <span className="ml-1 text-xs">
-                      {playingVoice === v.id ? "Stop" : lang === "zh" ? "试听" : "Preview"}
-                    </span>
                   </Button>
-                </button>
+                </motion.button>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
 
       <div className="flex justify-between pt-2">
-        <Button variant="ghost" onClick={onBack}>{t("onboarding.back", lang)}</Button>
-        <Button onClick={onNext} disabled={!canProceed} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-          {t("onboarding.next", lang)}
+        <Button variant="ghost" size="sm" onClick={onBack} className="text-muted-foreground hover:text-foreground">
+          <ArrowLeft size={14} className="mr-1" />{t("onboarding.back", lang)}
+        </Button>
+        <Button
+          onClick={onNext}
+          disabled={!canProceed}
+          className="bg-accent hover:bg-accent/90 text-accent-foreground btn-game glow-accent disabled:opacity-30 disabled:shadow-none"
+        >
+          {t("onboarding.next", lang)}<ArrowRight size={14} className="ml-1" />
         </Button>
       </div>
     </div>

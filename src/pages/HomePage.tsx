@@ -5,17 +5,49 @@ import { useSettingsStore } from "@/lib/store/settings-store";
 import { Button } from "@/components/ui/button";
 import { Headphones, Sparkles, Brain, Music, ArrowRight } from "lucide-react";
 
+const FloatingParticle = ({ delay, x, size }: { delay: number; x: number; size: number }) => (
+  <div
+    className="absolute rounded-full bg-accent/20 animate-float-up"
+    style={{
+      left: `${x}%`,
+      width: `${size}px`,
+      height: `${size}px`,
+      animationDelay: `${delay}s`,
+      animationDuration: `${12 + Math.random() * 8}s`,
+    }}
+  />
+);
+
 const HeroSection = () => {
   const lang = useSettingsStore((s) => s.preferences.interfaceLang);
   const navigate = useNavigate();
 
+  const particles = Array.from({ length: 15 }, (_, i) => ({
+    delay: i * 1.5,
+    x: Math.random() * 100,
+    size: 2 + Math.random() * 3,
+  }));
+
   return (
-    <section className="relative min-h-[80vh] flex flex-col items-center justify-center text-center px-4 overflow-hidden">
-      {/* Ambient bg */}
+    <section className="relative min-h-[85vh] flex flex-col items-center justify-center text-center px-4 overflow-hidden">
+      {/* Background */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-background" />
-        <div className="absolute top-20 left-1/3 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[100px] animate-pulse-slow" />
-        <div className="absolute bottom-20 right-1/3 w-[400px] h-[400px] bg-accent/3 rounded-full blur-[100px] animate-pulse-slow" style={{ animationDelay: "4s" }} />
+        {/* Central glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px]">
+          <div className="absolute inset-0 rounded-full bg-accent/[0.04] animate-glow-pulse" />
+        </div>
+        {/* Grid */}
+        <div className="absolute inset-0 opacity-[0.015]"
+          style={{
+            backgroundImage: `linear-gradient(hsl(var(--accent)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--accent)) 1px, transparent 1px)`,
+            backgroundSize: '80px 80px',
+          }}
+        />
+        {/* Particles */}
+        <div className="particle-field">
+          {particles.map((p, i) => <FloatingParticle key={i} {...p} />)}
+        </div>
       </div>
 
       <motion.div
@@ -31,29 +63,50 @@ const HeroSection = () => {
           transition={{ delay: 0.2 }}
         >
           <Headphones size={14} />
-          <span>Interactive Audio Narrative Engine</span>
+          <span>{lang === "zh" ? "互动式 AI 音频叙事引擎" : "Interactive AI Audio Narrative Engine"}</span>
         </motion.div>
 
-        <h1 className="text-6xl md:text-7xl font-bold font-serif mb-6 text-gradient-primary">
-          Echoverse
-        </h1>
-
-        <p className="text-xl md:text-2xl text-muted-foreground font-serif mb-10 leading-relaxed">
-          {t("app.tagline", lang)}
-        </p>
-
-        <Button
-          onClick={() => navigate("/create")}
-          size="lg"
-          className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-6 text-lg glow-accent"
+        <motion.h1
+          className="text-6xl md:text-8xl font-bold font-serif mb-6 text-accent"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
         >
-          {t("home.hero.cta.new", lang)}
-          <ArrowRight className="ml-2" size={20} />
-        </Button>
+          Echoverse
+        </motion.h1>
 
-        <p className="mt-8 text-sm text-muted-foreground">
+        <motion.p
+          className="text-xl md:text-2xl text-muted-foreground font-serif mb-12 leading-relaxed"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          {t("app.tagline", lang)}
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+        >
+          <Button
+            onClick={() => navigate("/create")}
+            size="lg"
+            className="bg-accent hover:bg-accent/90 text-accent-foreground px-10 py-7 text-lg btn-game glow-accent-strong"
+          >
+            {t("home.hero.cta.new", lang)}
+            <ArrowRight className="ml-2" size={20} />
+          </Button>
+        </motion.div>
+
+        <motion.p
+          className="mt-10 text-sm text-muted-foreground/60 font-mono"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.9 }}
+        >
           {t("home.quickstart", lang)}
-        </p>
+        </motion.p>
       </motion.div>
     </section>
   );
@@ -77,10 +130,12 @@ const FeatureCards = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 + i * 0.15 }}
-            className="glass-panel p-6 text-center hover:border-accent/30 transition-colors group"
+            className="glass-panel-strong p-6 text-center group hover:border-accent/30 transition-all duration-300"
           >
-            <div className="text-4xl mb-4">{f.emoji}</div>
-            <h3 className="text-lg font-semibold font-serif mb-2 group-hover:text-gradient-primary transition-colors">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-accent/10 border border-accent/15 flex items-center justify-center text-2xl group-hover:glow-accent transition-all duration-300">
+              {f.emoji}
+            </div>
+            <h3 className="text-lg font-semibold font-serif mb-2 group-hover:text-accent transition-colors">
               {t(f.titleKey, lang)}
             </h3>
             <p className="text-sm text-muted-foreground">{t(f.descKey, lang)}</p>

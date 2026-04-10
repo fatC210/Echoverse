@@ -1,10 +1,10 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useSettingsStore } from "@/lib/store/settings-store";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Zap, ArrowLeft, CheckCircle } from "lucide-react";
 
 interface TurbopufferConfigStepProps {
   onNext: () => void;
@@ -18,38 +18,65 @@ const TurbopufferConfigStep = ({ onNext, onBack, lang }: TurbopufferConfigStepPr
   const canProceed = !!turbopuffer.apiKey.trim();
 
   return (
-    <div className="glass-panel p-8 space-y-5">
+    <div className="glass-panel-strong p-8 space-y-5 scanline">
       <div className="flex items-center gap-3">
-        <span className="text-3xl">🔍</span>
-        <h2 className="text-2xl font-bold font-serif">{t("onboarding.turbopuffer.title", lang)}</h2>
+        <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center">
+          <Zap size={20} className="text-accent" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold font-serif">{t("onboarding.turbopuffer.title", lang)}</h2>
+          <p className="text-xs text-muted-foreground">{t("onboarding.turbopuffer.hint", lang)}</p>
+        </div>
       </div>
 
-      <div className="space-y-4">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-4"
+      >
         <div>
-          <Label className="text-sm text-muted-foreground">{t("onboarding.turbopuffer.apiKey", lang)}</Label>
-          <div className="relative mt-1">
+          <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase mb-1 block">
+            {t("onboarding.turbopuffer.apiKey", lang)}
+          </label>
+          <div className="relative">
             <Input
               type={showKey ? "text" : "password"}
               value={turbopuffer.apiKey}
               onChange={(e) => updateTurbopuffer({ apiKey: e.target.value })}
-              className="bg-secondary border-border pr-10"
+              className="input-game pr-10"
             />
             <button
               type="button"
               onClick={() => setShowKey(!showKey)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-accent transition-colors"
             >
-              {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+              {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
             </button>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">💡 {t("onboarding.turbopuffer.hint", lang)}</p>
         </div>
-      </div>
+
+        {canProceed && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex items-center gap-2 text-xs text-accent"
+          >
+            <CheckCircle size={14} />
+            <span>{t("onboarding.turbopuffer.ready", lang)}</span>
+          </motion.div>
+        )}
+      </motion.div>
 
       <div className="flex justify-between pt-2">
-        <Button variant="ghost" onClick={onBack}>{t("onboarding.back", lang)}</Button>
-        <Button onClick={onNext} disabled={!canProceed} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-          {t("onboarding.finish", lang)}
+        <Button variant="ghost" size="sm" onClick={onBack} className="text-muted-foreground hover:text-foreground">
+          <ArrowLeft size={14} className="mr-1" />{t("onboarding.back", lang)}
+        </Button>
+        <Button
+          onClick={onNext}
+          disabled={!canProceed}
+          className="bg-accent hover:bg-accent/90 text-accent-foreground btn-game glow-accent disabled:opacity-30 disabled:shadow-none"
+        >
+          {t("onboarding.finish", lang)}<CheckCircle size={14} className="ml-1.5" />
         </Button>
       </div>
     </div>
