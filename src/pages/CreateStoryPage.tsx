@@ -53,6 +53,7 @@ const CreateStoryPage = () => {
     const next = customTags.filter((t) => t !== tag);
     setCustomTags(next);
     setCustomTagsStore(next);
+    setSelectedTags((prev) => prev.filter((t) => t !== tag));
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
