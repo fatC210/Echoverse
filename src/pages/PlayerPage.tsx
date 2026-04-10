@@ -185,7 +185,7 @@ const VolumeControl = ({
   ];
 
   return (
-    <div className="w-64 p-4 glass-panel space-y-4">
+    <div className="w-64 p-4 bg-background border border-border rounded-xl shadow-lg space-y-4">
       {sliders.map((s) => (
         <div key={s.key} className="space-y-1">
           <div className="flex justify-between text-xs text-muted-foreground">
