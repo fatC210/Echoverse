@@ -26,6 +26,7 @@
   "onboarding.turbopuffer.apiKey": "API Key",
   "onboarding.turbopuffer.baseUrl": "API Base URL (optional)",
   "onboarding.turbopuffer.hint": "Get it from the turbopuffer.com console",
+  "onboarding.turbopuffer.ready": "Key detected — ready to connect",
   "onboarding.complete.title": "All Set!",
   "onboarding.complete.saved": "All configuration saved securely in your browser.",
   "onboarding.complete.modify": "You can modify settings anytime.",
