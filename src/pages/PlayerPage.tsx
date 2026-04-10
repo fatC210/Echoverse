@@ -297,10 +297,18 @@ const PlayerPage = () => {
   const [mood, setMood] = useState<MoodType>("mystery");
   const [currentSceneId, setCurrentSceneId] = useState("start");
 
-  // Scene graph: each choice's `next` points to another scene ID
+  // Shuffle and pick N items from array
+  const pickRandom = useCallback(<T,>(arr: T[], n: number): T[] => {
+    const shuffled = [...arr].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, n);
+  }, []);
+
+  type ChoiceItem = { id: string; label: string; text: string; hint: string; next?: string };
+
+  // Scene graph: each scene has 5 choices, we randomly pick 3
   const sceneGraph: Record<string, {
     narration: string; chapter: string; mood: MoodType;
-    choices: { id: string; label: string; text: string; hint: string; next?: string }[];
+    choices: ChoiceItem[];
   }> = useMemo(() => storyLang === "zh" ? {
     start: {
       narration: "你缓缓睁开双眼。刺眼的荧光灯直射瞳孔。空气尝起来发霉，被循环了太多次。远处机器的低沉嗡鸣填满了寂静——这是一座本该在数年前就被废弃的空间站的心跳声。",
@@ -309,6 +317,8 @@ const PlayerPage = () => {
         { id: "a", label: "A", text: "查看电脑终端", hint: "也许日志能解释发生了什么……", next: "terminal" },
         { id: "b", label: "B", text: "沿着走廊追寻声音", hint: "还有其他人活着吗？", next: "corridor" },
         { id: "c", label: "C", text: "尝试修复通讯手环", hint: "我需要让人知道我还活着", next: "bracelet" },
+        { id: "d", label: "D", text: "检查自己的身体状况", hint: "我的头很痛……发生了什么？", next: "terminal" },
+        { id: "e", label: "E", text: "寻找最近的逃生舱", hint: "先确保有退路", next: "corridor" },
       ],
     },
     terminal: {
