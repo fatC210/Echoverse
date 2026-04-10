@@ -323,9 +323,6 @@ const CreateStoryPage = () => {
                       : "border-border/50 hover:border-accent/30"
                   }`}
                 >
-                  <div className={`text-2xl mb-2 ${duration === opt.id ? "text-accent" : "text-muted-foreground"}`}>
-                    {opt.id === "short" ? "⚡" : opt.id === "medium" ? "📖" : "🏔️"}
-                  </div>
                   <div className={`text-sm font-medium ${duration === opt.id ? "text-accent" : "text-foreground"}`}>
                     {opt.id === "short" ? (lang === "zh" ? "短篇" : "Short") : opt.id === "medium" ? (lang === "zh" ? "中篇" : "Medium") : (lang === "zh" ? "长篇" : "Long")}
                   </div>
