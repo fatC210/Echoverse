@@ -40,15 +40,8 @@ const SettingsPage = () => {
     } catch { setTestStatuses((p) => ({ ...p, el: "error" })); }
   };
 
-  const testTurbopuffer = async () => {
-    setTestStatuses((p) => ({ ...p, tp: "testing" }));
-    try {
-      const res = await fetch(`${settings.turbopuffer.baseUrl}/v1/vectors`, {
-        headers: { Authorization: `Bearer ${settings.turbopuffer.apiKey}` },
-      });
-      setTestStatuses((p) => ({ ...p, tp: res.ok ? "success" : "error" }));
-    } catch { setTestStatuses((p) => ({ ...p, tp: "error" })); }
-  };
+  // turbopuffer API doesn't support CORS, skip browser-side test
+
 
   const previewVoice = async (voiceId: string) => {
     if (playingVoice) { setPlayingVoice(null); return; }

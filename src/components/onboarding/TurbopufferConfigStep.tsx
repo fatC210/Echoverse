@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSettingsStore } from "@/lib/store/settings-store";
-import { Eye, EyeOff, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 interface TurbopufferConfigStepProps {
   onNext: () => void;
@@ -31,7 +31,7 @@ const TurbopufferConfigStep = ({ onNext, onBack, lang }: TurbopufferConfigStepPr
             <Input
               type={showKey ? "text" : "password"}
               value={turbopuffer.apiKey}
-              onChange={(e) => { updateTurbopuffer({ apiKey: e.target.value }); setTestStatus("idle"); }}
+              onChange={(e) => updateTurbopuffer({ apiKey: e.target.value })}
               className="bg-secondary border-border pr-10"
             />
             <button
@@ -43,23 +43,6 @@ const TurbopufferConfigStep = ({ onNext, onBack, lang }: TurbopufferConfigStepPr
             </button>
           </div>
           <p className="text-xs text-muted-foreground mt-1">💡 {t("onboarding.turbopuffer.hint", lang)}</p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={testConnection} disabled={!turbopuffer.apiKey || testStatus === "testing"}>
-            {testStatus === "testing" && <Loader2 size={14} className="mr-1 animate-spin" />}
-            {t("onboarding.testConnection", lang)}
-          </Button>
-          {testStatus === "success" && (
-            <span className="flex items-center gap-1 text-sm text-emerald-400">
-              <CheckCircle2 size={16} /> {t("onboarding.connected", lang)}
-            </span>
-          )}
-          {testStatus === "error" && (
-            <span className="flex items-center gap-1 text-sm text-destructive">
-              <XCircle size={16} /> {t("onboarding.failed", lang)}
-            </span>
-          )}
         </div>
       </div>
 
