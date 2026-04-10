@@ -12,7 +12,7 @@ import { ArrowLeft, Volume2, Mic, Edit3, Square, Send, Volume1, Music, MessageCi
 // Sub-components
 
 const AtmosphericBackground = ({ mood }: { mood: MoodType }) => {
-  const config = MOOD_MAP[mood];
+  const config = MOOD_MAP[mood] || MOOD_MAP.mystery;
   return (
     <div className="fixed inset-0 transition-all duration-[3000ms]">
       <div
