@@ -412,41 +412,35 @@ const PlayerPage = () => {
           <span className="text-sm text-muted-foreground font-serif">{chapterTitle}</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="relative">
-            <Button variant="ghost" size="sm" onClick={() => { setShowWorldPanel(!showWorldPanel); setShowVoicePanel(false); setShowVolume(false); }} className="text-muted-foreground"><Edit3 size={14} /><span className="ml-1 text-xs hidden md:inline">{t("player.world", lang)}</span></Button>
-            {showWorldPanel && (
-              <div className="absolute top-full right-0 mt-2 z-50 bg-background border border-border rounded-xl shadow-lg p-4 w-64 space-y-3">
-                <h3 className="text-xs font-mono uppercase text-muted-foreground tracking-wider">{t("player.world", lang)}</h3>
-                <div className="space-y-2 text-sm text-foreground/80">
-                  <p><span className="text-muted-foreground">{storyLang === "zh" ? "地点：" : "Location: "}</span>{storyLang === "zh" ? "废弃空间站 · 第7区" : "Abandoned Station · Sector 7"}</p>
-                  <p><span className="text-muted-foreground">{storyLang === "zh" ? "时间：" : "Time: "}</span>{storyLang === "zh" ? "未知（系统时钟损坏）" : "Unknown (system clock damaged)"}</p>
-                  <p><span className="text-muted-foreground">{storyLang === "zh" ? "氛围：" : "Mood: "}</span>{storyLang === "zh" ? "紧张 · 神秘" : "Tense · Mysterious"}</p>
-                </div>
+          <div className="relative group/world">
+            <Button variant="ghost" size="sm" className="text-muted-foreground"><Edit3 size={14} /><span className="ml-1 text-xs hidden md:inline">{t("player.world", lang)}</span></Button>
+            <div className="absolute top-full right-0 mt-2 z-50 bg-background border border-border rounded-xl shadow-lg p-4 w-64 space-y-3 hidden group-hover/world:block">
+              <h3 className="text-xs font-mono uppercase text-muted-foreground tracking-wider">{t("player.world", lang)}</h3>
+              <div className="space-y-2 text-sm text-foreground/80">
+                <p><span className="text-muted-foreground">{storyLang === "zh" ? "地点：" : "Location: "}</span>{storyLang === "zh" ? "废弃空间站 · 第7区" : "Abandoned Station · Sector 7"}</p>
+                <p><span className="text-muted-foreground">{storyLang === "zh" ? "时间：" : "Time: "}</span>{storyLang === "zh" ? "未知（系统时钟损坏）" : "Unknown (system clock damaged)"}</p>
+                <p><span className="text-muted-foreground">{storyLang === "zh" ? "氛围：" : "Mood: "}</span>{storyLang === "zh" ? "紧张 · 神秘" : "Tense · Mysterious"}</p>
               </div>
-            )}
+            </div>
           </div>
-          <div className="relative">
-            <Button variant="ghost" size="sm" onClick={() => { setShowVoicePanel(!showVoicePanel); setShowWorldPanel(false); setShowVolume(false); }} className="text-muted-foreground"><Mic size={14} /><span className="ml-1 text-xs hidden md:inline">{t("player.voice", lang)}</span></Button>
-            {showVoicePanel && (
-              <div className="absolute top-full right-0 mt-2 z-50 bg-background border border-border rounded-xl shadow-lg p-4 w-64 space-y-3">
-                <h3 className="text-xs font-mono uppercase text-muted-foreground tracking-wider">{t("player.voice", lang)}</h3>
-                <div className="space-y-2 text-sm text-foreground/80">
-                  <p><span className="text-muted-foreground">{storyLang === "zh" ? "当前声音：" : "Current voice: "}</span>{storyLang === "zh" ? "默认旁白" : "Default Narrator"}</p>
-                  <p><span className="text-muted-foreground">{storyLang === "zh" ? "语速：" : "Speed: "}</span>1.0x</p>
-                  <p><span className="text-muted-foreground">{storyLang === "zh" ? "稳定性：" : "Stability: "}</span>0.5</p>
-                </div>
+          <div className="relative group/voice">
+            <Button variant="ghost" size="sm" className="text-muted-foreground"><Mic size={14} /><span className="ml-1 text-xs hidden md:inline">{t("player.voice", lang)}</span></Button>
+            <div className="absolute top-full right-0 mt-2 z-50 bg-background border border-border rounded-xl shadow-lg p-4 w-64 space-y-3 hidden group-hover/voice:block">
+              <h3 className="text-xs font-mono uppercase text-muted-foreground tracking-wider">{t("player.voice", lang)}</h3>
+              <div className="space-y-2 text-sm text-foreground/80">
+                <p><span className="text-muted-foreground">{storyLang === "zh" ? "当前声音：" : "Current voice: "}</span>{storyLang === "zh" ? "默认旁白" : "Default Narrator"}</p>
+                <p><span className="text-muted-foreground">{storyLang === "zh" ? "语速：" : "Speed: "}</span>1.0x</p>
+                <p><span className="text-muted-foreground">{storyLang === "zh" ? "稳定性：" : "Stability: "}</span>0.5</p>
               </div>
-            )}
+            </div>
           </div>
-          <div className="relative">
-            <Button variant="ghost" size="sm" onClick={() => { setShowVolume(!showVolume); setShowWorldPanel(false); setShowVoicePanel(false); }} className="text-muted-foreground">
+          <div className="relative group/volume">
+            <Button variant="ghost" size="sm" className="text-muted-foreground">
               <Volume2 size={14} /><span className="ml-1 text-xs hidden md:inline">{t("player.volume", lang)}</span>
             </Button>
-            {showVolume && (
-              <div className="absolute top-full right-0 mt-2 z-50">
-                <VolumeControl volumes={volumes} onChange={handleVolumeChange} />
-              </div>
-            )}
+            <div className="absolute top-full right-0 mt-2 z-50 hidden group-hover/volume:block">
+              <VolumeControl volumes={volumes} onChange={handleVolumeChange} />
+            </div>
           </div>
           <Button variant="ghost" size="sm" onClick={handleEndStory} className="text-destructive/70 hover:text-destructive">
             <Square size={14} /><span className="ml-1 text-xs hidden md:inline">{t("player.end", lang)}</span>
