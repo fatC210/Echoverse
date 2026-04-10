@@ -519,10 +519,11 @@ const PlayerPage = () => {
           endingName={storyLang === "zh" ? "共生" : "Symbiosis"}
           stats={{
             duration: "23:47",
-            decisions: 7,
+            decisions: storyLog.filter(e => e.choiceText).length,
             audioLayers: storyLang === "zh" ? "32 音效 + 6 配乐 + 10 旁白" : "32 SFX + 6 Music + 10 Narration",
             cacheHit: "42% (13/31)",
           }}
+          storyLog={storyLog}
           onAction={handleEndAction}
         />
       )}
