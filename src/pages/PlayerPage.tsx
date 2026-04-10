@@ -106,8 +106,8 @@ const ChoicePanel = ({
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          // Auto-select first choice when time runs out
-          onSelect(choices[0]?.id || "free");
+          const randomChoice = choices[Math.floor(Math.random() * choices.length)];
+          onSelect(randomChoice?.id || "free");
           return 0;
         }
         return prev - 1;
