@@ -46,8 +46,8 @@ const NarrationDisplay = ({ text, isTyping }: { text: string; isTyping: boolean 
   }, [text, isTyping]);
 
   return (
-    <div className="max-w-2xl mx-auto w-full px-6 pb-6">
-      <p className="narration-text text-foreground/90 leading-relaxed pb-6">
+    <div className="max-w-2xl mx-auto w-full px-6 pb-0">
+      <p className="narration-text text-foreground/90 leading-relaxed pb-1">
         {displayedText}
         {isTyping && displayedText.length < text.length && (
           <span className="inline-block w-[2px] h-5 bg-accent ml-1 animate-pulse" />
@@ -455,7 +455,7 @@ const PlayerPage = () => {
         <AudioLayerIndicator layers={audioLayers} />
       </div>
 
-      <div className="relative z-20 pb-3">
+      <div className="relative z-20 pb-6 pt-4">
         <AnimatePresence>
           {showChoices && (
             <ChoicePanel
