@@ -105,7 +105,7 @@ const HistoryPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 className="glass-panel p-5 flex flex-col hover:border-accent/30 transition-colors group cursor-pointer"
-                onClick={() => navigate(`/play/${story.id}`)}
+                onClick={() => navigate(`/play/${story.id}?view=summary`)}
               >
                 <div className="flex items-start justify-between">
                   <div>
