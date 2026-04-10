@@ -8,34 +8,34 @@ import { ArrowLeft, Play, RotateCcw, Download, Trash2, Clock, GitBranch, Clapper
 
 interface StoryEntry {
   id: string;
-  title: string;
-  genre: string;
-  tags: string[];
+  titleKey: string;
+  genreKey: string;
+  tagKeys: string[];
   status: "playing" | "completed";
   createdAt: string;
   totalDurationSec: number;
   totalDecisions: number;
-  endingName?: string;
+  endingKey?: string;
 }
 
 // Demo data
 const DEMO_STORIES: StoryEntry[] = [
   {
     id: "demo_1",
-    title: "Echo Station",
-    genre: "Sci-Fi Thriller",
-    tags: ["Space", "Suspense", "Scientist"],
+    titleKey: "history.demo1.title",
+    genreKey: "history.demo1.genre",
+    tagKeys: ["history.tag.space", "history.tag.suspense", "history.tag.scientist"],
     status: "completed",
     createdAt: "2026-04-08T10:30:00Z",
     totalDurationSec: 1427,
     totalDecisions: 7,
-    endingName: "Symbiosis",
+    endingKey: "history.demo1.ending",
   },
   {
     id: "demo_2",
-    title: "The Midnight Garden",
-    genre: "Fantasy Mystery",
-    tags: ["Dreamscape", "Mystery", "Child"],
+    titleKey: "history.demo2.title",
+    genreKey: "history.demo2.genre",
+    tagKeys: ["history.tag.dreamscape", "history.tag.mystery", "history.tag.child"],
     status: "playing",
     createdAt: "2026-04-09T14:20:00Z",
     totalDurationSec: 890,
@@ -43,14 +43,14 @@ const DEMO_STORIES: StoryEntry[] = [
   },
   {
     id: "demo_3",
-    title: "Last Train to Nowhere",
-    genre: "Horror",
-    tags: ["Victorian", "Horror", "Detective"],
+    titleKey: "history.demo3.title",
+    genreKey: "history.demo3.genre",
+    tagKeys: ["history.tag.victorian", "history.tag.horror", "history.tag.detective"],
     status: "completed",
     createdAt: "2026-04-07T22:00:00Z",
     totalDurationSec: 2100,
     totalDecisions: 9,
-    endingName: "The Truth",
+    endingKey: "history.demo3.ending",
   },
 ];
 
@@ -101,31 +101,31 @@ const HistoryPage = () => {
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="font-serif font-semibold text-lg group-hover:text-gradient-primary transition-colors">{story.title}</h3>
-                    <p className="text-xs text-muted-foreground">{story.genre}</p>
+                    <h3 className="font-serif font-semibold text-lg group-hover:text-gradient-primary transition-colors">{t(story.titleKey, lang)}</h3>
+                    <p className="text-xs text-muted-foreground">{t(story.genreKey, lang)}</p>
                   </div>
                   <span className={`px-2 py-0.5 text-xs rounded-full ${
                     story.status === "completed"
                       ? "bg-emerald-500/20 text-emerald-400"
                       : "bg-accent/20 text-accent"
                   }`}>
-                    {story.status === "completed" ? "✓" : "▶"}
+                    {story.status === "completed" ? t("history.status.completed", lang) : t("history.status.playing", lang)}
                   </span>
                 </div>
 
                 <div className="flex flex-wrap gap-1">
-                  {story.tags.map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 text-xs rounded bg-secondary text-muted-foreground">{tag}</span>
+                  {story.tagKeys.map((tagKey) => (
+                    <span key={tagKey} className="px-2 py-0.5 text-xs rounded bg-secondary text-muted-foreground">{t(tagKey, lang)}</span>
                   ))}
                 </div>
 
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1"><Clock size={12} />{formatDuration(story.totalDurationSec)}</span>
-                  <span className="flex items-center gap-1"><GitBranch size={12} />{story.totalDecisions} decisions</span>
+                  <span className="flex items-center gap-1"><GitBranch size={12} />{story.totalDecisions} {t("history.decisions", lang)}</span>
                 </div>
 
-                {story.endingName && (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1"><Clapperboard size={12} /> {story.endingName}</p>
+                {story.endingKey && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1"><Clapperboard size={12} /> {t("history.ending", lang)}: {t(story.endingKey, lang)}</p>
                 )}
 
                 <p className="text-xs text-muted-foreground">
