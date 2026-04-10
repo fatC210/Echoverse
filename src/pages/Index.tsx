@@ -4,7 +4,6 @@ import { useSettingsStore } from "@/lib/store/settings-store";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 import HomePage from "@/pages/HomePage";
 import EchoverseLogo from "@/components/EchoverseLogo";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Settings, Plus, Clock } from "lucide-react";
@@ -33,9 +32,6 @@ const Navigation = () => {
           <Button variant="ghost" size="sm" onClick={() => navigate("/settings")} className="text-muted-foreground hover:text-foreground">
             <Settings size={16} />
           </Button>
-          <div className="ml-1 border-l border-border/30 pl-2">
-            <LanguageSwitcher />
-          </div>
         </div>
       </div>
     </nav>
