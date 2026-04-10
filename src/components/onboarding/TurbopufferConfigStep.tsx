@@ -15,21 +15,7 @@ interface TurbopufferConfigStepProps {
 const TurbopufferConfigStep = ({ onNext, onBack, lang }: TurbopufferConfigStepProps) => {
   const { turbopuffer, updateTurbopuffer } = useSettingsStore();
   const [showKey, setShowKey] = useState(false);
-  const [testStatus, setTestStatus] = useState<"idle" | "testing" | "success" | "error">("idle");
-
-  const testConnection = async () => {
-    setTestStatus("testing");
-    try {
-      const res = await fetch(`${turbopuffer.baseUrl}/v1/vectors`, {
-        headers: { Authorization: `Bearer ${turbopuffer.apiKey}` },
-      });
-      setTestStatus(res.ok ? "success" : "error");
-    } catch {
-      setTestStatus("error");
-    }
-  };
-
-  const canProceed = testStatus === "success";
+  const canProceed = !!turbopuffer.apiKey.trim();
 
   return (
     <div className="glass-panel p-8 space-y-5">
