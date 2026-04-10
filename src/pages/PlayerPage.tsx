@@ -341,9 +341,6 @@ const PlayerPage = () => {
   const [narrationText, setNarrationText] = useState(currentScene.narration);
   const [isTyping, setIsTyping] = useState(true);
   const [showChoices, setShowChoices] = useState(false);
-  const [showVolume, setShowVolume] = useState(false);
-  const [showWorldPanel, setShowWorldPanel] = useState(false);
-  const [showVoicePanel, setShowVoicePanel] = useState(false);
   const [showEndScreen, setShowEndScreen] = useState(false);
   const [chapterTitle, setChapterTitle] = useState(currentScene.chapter);
   const [volumes, setVolumes] = useState({ master: 1, narration: 1, sfx: 0.7, music: 0.4 });
