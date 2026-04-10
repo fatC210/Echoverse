@@ -271,34 +271,87 @@ const PlayerPage = () => {
   const storyLang = useSettingsStore((s) => s.preferences.storyLang);
 
   const [mood, setMood] = useState<MoodType>("mystery");
-  const [narrationText, setNarrationText] = useState(
-    storyLang === "zh"
-      ? "你缓缓睁开双眼。刺眼的荧光灯直射瞳孔。空气尝起来发霉，被循环了太多次。远处机器的低沉嗡鸣填满了寂静——这是一座本该在数年前就被废弃的空间站的心跳声。"
-      : "You slowly open your eyes. The harsh fluorescent light stabs into your pupils. The air tastes stale, recycled too many times. A distant hum of machinery fills the silence — the heartbeat of a station that should have been abandoned years ago."
-  );
+  const [sceneIndex, setSceneIndex] = useState(0);
+
+  const scenes = storyLang === "zh" ? [
+    {
+      narration: "你缓缓睁开双眼。刺眼的荧光灯直射瞳孔。空气尝起来发霉，被循环了太多次。远处机器的低沉嗡鸣填满了寂静——这是一座本该在数年前就被废弃的空间站的心跳声。",
+      chapter: "第一章：苏醒",
+      mood: "mystery" as MoodType,
+      choices: [
+        { id: "a", label: "A", text: "查看电脑终端", hint: "也许日志能解释发生了什么……" },
+        { id: "b", label: "B", text: "沿着走廊追寻声音", hint: "还有其他人活着吗？" },
+        { id: "c", label: "C", text: "尝试修复通讯手环", hint: "我需要让人知道我还活着" },
+      ],
+    },
+    {
+      narration: "你走近终端。屏幕在你触碰下闪烁亮起，投射出一片病态的绿色光芒。一行行文字飞速滚动——系统日志、船员名单、从未发送的求救信号。一条记录引起了你的注意：「生物样本突破收容——全员撤离」。日期显示是三年前。",
+      chapter: "第二章：发现",
+      mood: "tension" as MoodType,
+      choices: [
+        { id: "a", label: "A", text: "搜索更多日志记录", hint: "真相或许藏在数据中……" },
+        { id: "b", label: "B", text: "前往生物实验室", hint: "被收容的到底是什么？" },
+        { id: "c", label: "C", text: "启动紧急广播系统", hint: "也许有人还在监听" },
+      ],
+    },
+    {
+      narration: "实验室的门在你面前缓缓滑开。一阵冰冷的空气扑面而来，带着甲醛和某种你无法辨识的甜腻气味。破碎的培养皿散落一地，墙壁上布满了某种深色的藤蔓状物质。它们似乎在……呼吸。",
+      chapter: "第三章：真相",
+      mood: "dark" as MoodType,
+      choices: [
+        { id: "a", label: "A", text: "采集藤蔓样本", hint: "了解你的敌人" },
+        { id: "b", label: "B", text: "立即撤退并封锁实验室", hint: "有些东西不该被打扰" },
+        { id: "c", label: "C", text: "尝试与它沟通", hint: "它在呼吸……也许它有意识？" },
+      ],
+    },
+  ] : [
+    {
+      narration: "You slowly open your eyes. The harsh fluorescent light stabs into your pupils. The air tastes stale, recycled too many times. A distant hum of machinery fills the silence — the heartbeat of a station that should have been abandoned years ago.",
+      chapter: "Chapter 1: Awakening",
+      mood: "mystery" as MoodType,
+      choices: [
+        { id: "a", label: "A", text: "Check the computer terminal", hint: "Maybe the logs can explain what happened..." },
+        { id: "b", label: "B", text: "Follow the sound down the corridor", hint: "Is someone else still alive?" },
+        { id: "c", label: "C", text: "Try to repair the comm bracelet", hint: "I need to let someone know I'm alive" },
+      ],
+    },
+    {
+      narration: "You approach the terminal. Its screen flickers to life at your touch, casting a sickly green glow across your face. Lines of text scroll rapidly — system logs, crew manifests, distress signals that were never sent. One entry catches your eye: 'Biological sample containment breach — all personnel evacuate.' The date reads three years ago.",
+      chapter: "Chapter 2: Discovery",
+      mood: "tension" as MoodType,
+      choices: [
+        { id: "a", label: "A", text: "Search for more log entries", hint: "The truth might be hidden in the data..." },
+        { id: "b", label: "B", text: "Head to the bio-lab", hint: "What exactly was contained?" },
+        { id: "c", label: "C", text: "Activate the emergency broadcast", hint: "Maybe someone is still listening" },
+      ],
+    },
+    {
+      narration: "The laboratory door slides open slowly. A wave of cold air hits you, carrying the scent of formaldehyde and something sweet you can't identify. Shattered specimen jars litter the floor, and the walls are covered in dark, vine-like growths. They seem to be... breathing.",
+      chapter: "Chapter 3: The Truth",
+      mood: "dark" as MoodType,
+      choices: [
+        { id: "a", label: "A", text: "Collect a vine sample", hint: "Know your enemy" },
+        { id: "b", label: "B", text: "Retreat and seal the lab", hint: "Some things should stay undisturbed" },
+        { id: "c", label: "C", text: "Try to communicate with it", hint: "It's breathing... maybe it's conscious?" },
+      ],
+    },
+  ];
+
+  const currentScene = scenes[sceneIndex] || scenes[scenes.length - 1];
+  const [narrationText, setNarrationText] = useState(currentScene.narration);
   const [isTyping, setIsTyping] = useState(true);
   const [showChoices, setShowChoices] = useState(false);
   const [showVolume, setShowVolume] = useState(false);
   const [showWorldPanel, setShowWorldPanel] = useState(false);
   const [showVoicePanel, setShowVoicePanel] = useState(false);
   const [showEndScreen, setShowEndScreen] = useState(false);
-  const [chapterTitle, setChapterTitle] = useState(storyLang === "zh" ? "第一章：苏醒" : "Chapter 1: Awakening");
+  const [chapterTitle, setChapterTitle] = useState(currentScene.chapter);
   const [volumes, setVolumes] = useState({ master: 1, narration: 1, sfx: 0.7, music: 0.4 });
 
   const audioLayers = [
     { type: "sfx", name: storyLang === "zh" ? "雨声" : "Rain", active: true },
     { type: "music", name: storyLang === "zh" ? "氛围音乐" : "Ambient", active: true },
     { type: "tts", name: t("player.narrating", lang), active: true },
-  ];
-
-  const choices: Choice[] = storyLang === "zh" ? [
-    { id: "a", label: "A", text: "查看电脑终端", hint: "也许日志能解释发生了什么……" },
-    { id: "b", label: "B", text: "沿着走廊追寻声音", hint: "还有其他人活着吗？" },
-    { id: "c", label: "C", text: "尝试修复通讯手环", hint: "我需要让人知道我还活着" },
-  ] : [
-    { id: "a", label: "A", text: "Check the computer terminal", hint: "Maybe the logs can explain what happened..." },
-    { id: "b", label: "B", text: "Follow the sound down the corridor", hint: "Is someone else still alive?" },
-    { id: "c", label: "C", text: "Try to repair the comm bracelet", hint: "I need to let someone know I'm alive" },
   ];
 
   useEffect(() => {
@@ -311,28 +364,21 @@ const PlayerPage = () => {
 
   const handleChoice = useCallback((choiceId: string, text?: string) => {
     setShowChoices(false);
-    setIsTyping(true);
-    setMood("tension");
-    setNarrationText(
-      storyLang === "zh"
-        ? (choiceId === "a"
-          ? "你走近终端。屏幕在你触碰下闪烁亮起，投射出一片病态的绿色光芒。一行行文字飞速滚动——系统日志、船员名单、从未发送的求救信号。一条记录引起了你的注意……"
-          : choiceId === "b"
-          ? "你的脚步在走廊中回荡。那个声音越来越响——一种有节奏的敲击声，几乎是刻意的。当你转过拐角，应急灯将一切浸染成深红色……"
-          : "你翻转手环。外壳已经碎裂，显示屏漆黑一片。但在表面之下，有一丝微弱的光脉冲——电池还有一点电量……")
-        : (choiceId === "a"
-          ? "You approach the terminal. Its screen flickers to life at your touch, casting a sickly green glow across your face. Lines of text scroll rapidly — system logs, crew manifests, distress signals that were never sent. One entry catches your eye..."
-          : choiceId === "b"
-          ? "Your footsteps echo through the corridor. The sound grows louder — a rhythmic tapping, almost deliberate. As you round the corner, the emergency lights bathe everything in crimson..."
-          : "You turn the bracelet over in your hands. The casing is cracked, its display dark. But beneath the surface, a faint pulse of light — the power cell still holds a charge...")
-    );
-    setChapterTitle(storyLang === "zh" ? "第一章：发现" : "Chapter 1: Discovery");
-    setTimeout(() => {
-      setIsTyping(false);
-      setTimeout(() => setShowChoices(true), 1000);
-    }, 5000);
-  }, []);
 
+    const nextIndex = sceneIndex + 1;
+    if (nextIndex >= scenes.length) {
+      // Story ends
+      setShowEndScreen(true);
+      return;
+    }
+
+    setSceneIndex(nextIndex);
+    const nextScene = scenes[nextIndex];
+    setIsTyping(true);
+    setMood(nextScene.mood);
+    setNarrationText(nextScene.narration);
+    setChapterTitle(nextScene.chapter);
+  }, [sceneIndex, scenes]);
   const handleVolumeChange = (key: string, val: number) => {
     setVolumes((prev) => ({ ...prev, [key]: val }));
   };
@@ -425,7 +471,7 @@ const PlayerPage = () => {
         <AnimatePresence>
           {showChoices && (
             <ChoicePanel
-              choices={choices}
+              choices={currentScene.choices}
               onSelect={handleChoice}
               countdown={45}
             />
