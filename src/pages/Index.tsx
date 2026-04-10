@@ -19,8 +19,8 @@ const Navigation = () => {
     <nav className="fixed top-0 left-0 right-0 z-40 bg-background/60 backdrop-blur-xl border-b border-border/30">
       <div className="max-w-5xl mx-auto flex items-center justify-between px-4 py-3">
         <button onClick={() => navigate("/")} className="flex items-center gap-2.5 group">
-          <EchoverseLogo size={28} />
-          <span className="text-lg font-bold font-serif text-accent">Echoverse</span>
+          <EchoverseLogo size={36} />
+          <span className="text-xl font-bold font-serif text-accent">Echoverse</span>
         </button>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="sm" onClick={() => navigate("/create")} className="text-muted-foreground hover:text-foreground">

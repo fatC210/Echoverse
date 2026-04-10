@@ -4,8 +4,8 @@ import { t } from "@/lib/i18n";
 import { useSettingsStore } from "@/lib/store/settings-store";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Brain, Music, ArrowRight } from "lucide-react";
-import EchoverseLogo from "@/components/EchoverseLogo";
 
+/* Standard small particle */
 const FloatingParticle = ({ delay, x, y, size, duration }: { delay: number; x: number; y: number; size: number; duration: number }) => (
   <motion.div
     className="absolute rounded-full bg-accent"
@@ -20,14 +20,67 @@ const FloatingParticle = ({ delay, x, y, size, duration }: { delay: number; x: n
   />
 );
 
-/* Concentric pulse ring */
-const PulseRing = ({ delay, size }: { delay: number; size: number }) => (
+/* Glowing orb - larger, blurred, slow-moving */
+const GlowOrb = ({ delay, x, y, size }: { delay: number; x: number; y: number; size: number }) => (
   <motion.div
-    className="absolute top-1/2 left-1/2 rounded-full border border-accent/10"
-    style={{ width: size, height: size, marginLeft: -size / 2, marginTop: -size / 2 }}
-    initial={{ opacity: 0.5, scale: 0.8 }}
-    animate={{ opacity: 0, scale: 1.4 }}
-    transition={{ duration: 6, delay, repeat: Infinity, ease: "easeOut" }}
+    className="absolute rounded-full bg-accent/20"
+    style={{
+      left: `${x}%`, top: `${y}%`, width: size, height: size,
+      filter: `blur(${size / 3}px)`,
+      boxShadow: `0 0 ${size}px ${size / 3}px hsl(var(--accent) / 0.15)`,
+    }}
+    animate={{
+      x: [0, (Math.random() - 0.5) * 80, 0],
+      y: [0, (Math.random() - 0.5) * 80, 0],
+      opacity: [0.1, 0.35, 0.1],
+      scale: [0.8, 1.2, 0.8],
+    }}
+    transition={{ duration: 12 + Math.random() * 8, delay, repeat: Infinity, ease: "easeInOut" }}
+  />
+);
+
+/* Shooting star - fast diagonal streak */
+const ShootingStar = ({ delay, startX, startY }: { delay: number; startX: number; startY: number }) => (
+  <motion.div
+    className="absolute"
+    style={{ left: `${startX}%`, top: `${startY}%` }}
+    initial={{ opacity: 0 }}
+    animate={{
+      x: [0, 200],
+      y: [0, 120],
+      opacity: [0, 0.8, 0],
+    }}
+    transition={{ duration: 1.5, delay, repeat: Infinity, repeatDelay: 8 + Math.random() * 12, ease: "easeIn" }}
+  >
+    <div
+      className="bg-accent rounded-full"
+      style={{
+        width: 3, height: 3,
+        boxShadow: `
+          -4px 0 6px 1px hsl(var(--accent) / 0.4),
+          -10px 0 12px 2px hsl(var(--accent) / 0.2),
+          -20px 0 20px 3px hsl(var(--accent) / 0.1)
+        `,
+      }}
+    />
+  </motion.div>
+);
+
+/* Pulsing dot - stays in place, breathes */
+const PulsingDot = ({ x, y, delay, size }: { x: number; y: number; delay: number; size: number }) => (
+  <motion.div
+    className="absolute rounded-full bg-accent"
+    style={{ left: `${x}%`, top: `${y}%`, width: size, height: size }}
+    animate={{
+      opacity: [0.1, 0.6, 0.1],
+      scale: [1, 1.8, 1],
+      boxShadow: [
+        `0 0 0px 0px hsl(var(--accent) / 0)`,
+        `0 0 ${size * 4}px ${size * 2}px hsl(var(--accent) / 0.15)`,
+        `0 0 0px 0px hsl(var(--accent) / 0)`,
+      ],
+    }}
+    transition={{ duration: 3 + Math.random() * 3, delay, repeat: Infinity, ease: "easeInOut" }}
   />
 );
 
@@ -35,13 +88,32 @@ const HeroSection = () => {
   const lang = useSettingsStore((s) => s.preferences.interfaceLang);
   const navigate = useNavigate();
 
-  // More particles, spread across whole viewport
-  const particles = Array.from({ length: 50 }, (_, i) => ({
-    delay: i * 0.5 + Math.random() * 2,
+  const particles = Array.from({ length: 60 }, (_, i) => ({
+    delay: i * 0.4 + Math.random() * 2,
     x: Math.random() * 100,
     y: Math.random() * 100,
     size: 1 + Math.random() * 3.5,
-    duration: 6 + Math.random() * 10,
+    duration: 5 + Math.random() * 10,
+  }));
+
+  const glowOrbs = Array.from({ length: 6 }, (_, i) => ({
+    delay: i * 2,
+    x: 10 + Math.random() * 80,
+    y: 10 + Math.random() * 80,
+    size: 40 + Math.random() * 60,
+  }));
+
+  const shootingStars = Array.from({ length: 4 }, (_, i) => ({
+    delay: i * 5 + Math.random() * 3,
+    startX: Math.random() * 60,
+    startY: Math.random() * 50,
+  }));
+
+  const pulsingDots = Array.from({ length: 15 }, (_, i) => ({
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    delay: i * 0.8 + Math.random() * 2,
+    size: 2 + Math.random() * 3,
   }));
 
   return (
@@ -49,14 +121,6 @@ const HeroSection = () => {
       {/* Background layers */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-background" />
-
-        {/* Concentric pulse rings */}
-        <PulseRing delay={0} size={250} />
-        <PulseRing delay={1} size={400} />
-        <PulseRing delay={2} size={550} />
-        <PulseRing delay={3} size={700} />
-        <PulseRing delay={4} size={850} />
-        <PulseRing delay={5} size={1000} />
 
         {/* Central glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px]">
@@ -68,8 +132,17 @@ const HeroSection = () => {
           />
         </div>
 
-        {/* Dense floating particles */}
-        {particles.map((p, i) => <FloatingParticle key={i} {...p} />)}
+        {/* Glow orbs */}
+        {glowOrbs.map((o, i) => <GlowOrb key={`orb-${i}`} {...o} />)}
+
+        {/* Floating particles */}
+        {particles.map((p, i) => <FloatingParticle key={`p-${i}`} {...p} />)}
+
+        {/* Pulsing dots */}
+        {pulsingDots.map((d, i) => <PulsingDot key={`dot-${i}`} {...d} />)}
+
+        {/* Shooting stars */}
+        {shootingStars.map((s, i) => <ShootingStar key={`star-${i}`} {...s} />)}
 
         {/* Subtle grid */}
         <div className="absolute inset-0 opacity-[0.02]"
@@ -86,7 +159,6 @@ const HeroSection = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
       >
-
         <motion.div
           className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-sm text-accent mb-6"
           initial={{ opacity: 0, y: 10 }}
