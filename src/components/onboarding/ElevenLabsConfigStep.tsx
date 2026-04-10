@@ -17,8 +17,6 @@ const ElevenLabsConfigStep = ({ onNext, onBack, lang }: ElevenLabsConfigStepProp
   const { elevenlabs, voice, updateElevenlabs, updateVoice } = useSettingsStore();
   const [showKey, setShowKey] = useState(false);
   const [testStatus, setTestStatus] = useState<"idle" | "testing" | "success" | "error">("idle");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [manualVoiceId, setManualVoiceId] = useState("");
   const [playingVoice, setPlayingVoice] = useState<string | null>(null);
 
   const testConnection = async () => {
@@ -39,14 +37,6 @@ const ElevenLabsConfigStep = ({ onNext, onBack, lang }: ElevenLabsConfigStepProp
       voiceName: v.name,
       voiceDescription: `${v.gender === "female" ? "♀" : "♂"} ${v.description[lang]}`,
     });
-    setManualVoiceId("");
-  };
-
-  const handleManualVoiceId = (id: string) => {
-    setManualVoiceId(id);
-    if (id.trim()) {
-      updateVoice({ voiceId: id.trim(), voiceName: "Custom", voiceDescription: "Manual Voice ID" });
-    }
   };
 
   const previewVoice = async (voiceId: string) => {
@@ -71,12 +61,6 @@ const ElevenLabsConfigStep = ({ onNext, onBack, lang }: ElevenLabsConfigStepProp
     } catch {}
     setTimeout(() => setPlayingVoice(null), 10000);
   };
-
-  const filteredVoices = ELEVENLABS_VOICES.filter(
-    (v) =>
-      v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.description.en.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const hasVoice = !!voice.voiceId;
   const canProceed = testStatus === "success" && hasVoice;
@@ -127,68 +111,49 @@ const ElevenLabsConfigStep = ({ onNext, onBack, lang }: ElevenLabsConfigStepProp
         </div>
 
         {testStatus === "success" && (
-          <>
-            <div className="border-t border-border pt-4">
-              <Label className="text-sm font-medium">{t("onboarding.elevenlabs.selectVoice", lang)}</Label>
-              <Input
-                placeholder={t("onboarding.elevenlabs.searchVoice", lang)}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-secondary border-border mt-2 mb-3"
-              />
-
-              <div className="space-y-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-secondary/50 p-2">
-                {filteredVoices.map((v) => (
-                  <button
-                    key={v.id}
-                    onClick={() => selectVoice(v)}
-                    className={`w-full flex items-center justify-between p-2.5 rounded-lg text-sm transition-colors ${
-                      voice.voiceId === v.id
-                        ? "bg-primary/20 border border-primary/50"
-                        : "hover:bg-muted"
-                    }`}
+          <div className="border-t border-border pt-4">
+            <Label className="text-sm font-medium">{t("onboarding.elevenlabs.selectVoice", lang)}</Label>
+            <div className="space-y-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-secondary/50 p-2 mt-2">
+              {ELEVENLABS_VOICES.map((v) => (
+                <button
+                  key={v.id}
+                  onClick={() => selectVoice(v)}
+                  className={`w-full flex items-center justify-between p-2.5 rounded-lg text-sm transition-colors ${
+                    voice.voiceId === v.id
+                      ? "bg-accent/20 border border-accent/50"
+                      : "hover:bg-muted"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`w-3 h-3 rounded-full border-2 ${
+                      voice.voiceId === v.id ? "bg-accent border-accent" : "border-muted-foreground"
+                    }`} />
+                    <span className="font-medium">{v.name}</span>
+                    <span className="text-muted-foreground">
+                      · {v.gender === "female" ? "♀" : "♂"} · {v.description[lang]}
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => { e.stopPropagation(); previewVoice(v.id); }}
+                    className="h-7 px-2"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className={`w-3 h-3 rounded-full border-2 ${
-                        voice.voiceId === v.id ? "bg-primary border-primary" : "border-muted-foreground"
-                      }`} />
-                      <span className="font-medium">{v.name}</span>
-                      <span className="text-muted-foreground">
-                        · {v.gender === "female" ? "♀" : "♂"} · {v.description[lang]}
-                      </span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => { e.stopPropagation(); previewVoice(v.id); }}
-                      className="h-7 px-2"
-                    >
-                      {playingVoice === v.id ? <Square size={12} /> : <Play size={12} />}
-                      <span className="ml-1 text-xs">
-                        {playingVoice === v.id ? "Stop" : lang === "zh" ? "试听" : "Preview"}
-                      </span>
-                    </Button>
-                  </button>
-                ))}
-              </div>
+                    {playingVoice === v.id ? <Square size={12} /> : <Play size={12} />}
+                    <span className="ml-1 text-xs">
+                      {playingVoice === v.id ? "Stop" : lang === "zh" ? "试听" : "Preview"}
+                    </span>
+                  </Button>
+                </button>
+              ))}
             </div>
-
-            <div>
-              <Label className="text-xs text-muted-foreground">{t("onboarding.elevenlabs.manualVoiceId", lang)}</Label>
-              <Input
-                value={manualVoiceId}
-                onChange={(e) => handleManualVoiceId(e.target.value)}
-                placeholder="voice_id..."
-                className="bg-secondary border-border mt-1"
-              />
-            </div>
-          </>
+          </div>
         )}
       </div>
 
       <div className="flex justify-between pt-2">
         <Button variant="ghost" onClick={onBack}>{t("onboarding.back", lang)}</Button>
-        <Button onClick={onNext} disabled={!canProceed} className="bg-gradient-to-r from-primary to-accent text-primary-foreground">
+        <Button onClick={onNext} disabled={!canProceed} className="bg-accent hover:bg-accent/90 text-accent-foreground">
           {t("onboarding.next", lang)}
         </Button>
       </div>

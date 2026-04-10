@@ -148,10 +148,6 @@ const SettingsPage = () => {
             <div className="space-y-3">
               <h3 className="text-sm font-medium flex items-center gap-2">🔍 turbopuffer</h3>
               <KeyInput label={t("onboarding.turbopuffer.apiKey", lang)} value={settings.turbopuffer.apiKey} onChange={(v) => settings.updateTurbopuffer({ apiKey: v })} id="tp" />
-              <div>
-                <Label className="text-sm text-muted-foreground">{t("onboarding.turbopuffer.baseUrl", lang)}</Label>
-                <Input value={settings.turbopuffer.baseUrl} onChange={(e) => settings.updateTurbopuffer({ baseUrl: e.target.value })} className="bg-secondary border-border mt-1" />
-              </div>
               <TestButton status={testStatuses.tp || "idle"} onTest={testTurbopuffer} />
             </div>
           </section>
@@ -168,10 +164,10 @@ const SettingsPage = () => {
                 <button
                   key={v.id}
                   onClick={() => settings.updateVoice({ voiceId: v.id, voiceName: v.name, voiceDescription: `${v.gender === "female" ? "♀" : "♂"} ${v.description[lang]}` })}
-                  className={`w-full flex items-center justify-between p-2.5 rounded-lg text-sm transition-colors ${settings.voice.voiceId === v.id ? "bg-primary/20 border border-primary/50" : "hover:bg-muted"}`}
+                  className={`w-full flex items-center justify-between p-2.5 rounded-lg text-sm transition-colors ${settings.voice.voiceId === v.id ? "bg-accent/20 border border-accent/50" : "hover:bg-muted"}`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className={`w-3 h-3 rounded-full border-2 ${settings.voice.voiceId === v.id ? "bg-primary border-primary" : "border-muted-foreground"}`} />
+                    <span className={`w-3 h-3 rounded-full border-2 ${settings.voice.voiceId === v.id ? "bg-accent border-accent" : "border-muted-foreground"}`} />
                     <span>{v.name}</span>
                     <span className="text-muted-foreground text-xs">{v.description[lang]}</span>
                   </div>

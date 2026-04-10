@@ -85,7 +85,7 @@ const HistoryPage = () => {
         {stories.length === 0 ? (
           <div className="text-center py-20 text-muted-foreground">
             <p className="text-lg">{t("history.empty", lang)}</p>
-            <Button onClick={() => navigate("/create")} className="mt-4 bg-gradient-to-r from-primary to-accent text-primary-foreground">
+            <Button onClick={() => navigate("/create")} className="mt-4 bg-accent hover:bg-accent/90 text-accent-foreground">
               {t("home.hero.cta.first", lang)}
             </Button>
           </div>
@@ -97,7 +97,7 @@ const HistoryPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="glass-panel p-5 space-y-3 hover:border-primary/30 transition-colors group"
+                className="glass-panel p-5 space-y-3 hover:border-accent/30 transition-colors group"
               >
                 <div className="flex items-start justify-between">
                   <div>
@@ -107,7 +107,7 @@ const HistoryPage = () => {
                   <span className={`px-2 py-0.5 text-xs rounded-full ${
                     story.status === "completed"
                       ? "bg-emerald-500/20 text-emerald-400"
-                      : "bg-primary/20 text-primary"
+                      : "bg-accent/20 text-accent"
                   }`}>
                     {story.status === "completed" ? "✓" : "▶"}
                   </span>

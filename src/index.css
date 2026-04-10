@@ -90,7 +90,7 @@
   }
 
   .glow-primary {
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.15), 0 0 60px hsl(var(--primary) / 0.05);
+    box-shadow: 0 0 20px hsl(var(--accent) / 0.15), 0 0 60px hsl(var(--accent) / 0.05);
   }
 
   .glow-accent {
@@ -98,14 +98,42 @@
   }
 
   .text-gradient-primary {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    color: hsl(var(--accent));
   }
 
   .narration-text {
     font-family: var(--font-serif);
     @apply text-lg leading-relaxed tracking-wide;
   }
+}
+
+/* Auto-hide scrollbar with no background */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
 }
 
 /* Atmospheric animations */

@@ -45,7 +45,7 @@ const CompletionStep = ({ onComplete, lang }: CompletionStepProps) => {
 
       <Button
         onClick={handleComplete}
-        className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 text-primary-foreground"
+        className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
         size="lg"
       >
         {t("onboarding.complete.cta", lang)}
