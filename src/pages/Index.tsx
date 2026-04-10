@@ -1,16 +1,71 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useSettingsStore } from "@/lib/store/settings-store";
+import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
+import HomePage from "@/pages/HomePage";
+import { Button } from "@/components/ui/button";
+import { Settings, Plus, Clock } from "lucide-react";
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+const Navigation = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Hide nav on player page
+  if (location.pathname.startsWith("/play/")) return null;
+
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
-    </div>
+    <nav className="fixed top-0 left-0 right-0 z-40 bg-background/60 backdrop-blur-xl border-b border-border/30">
+      <div className="max-w-5xl mx-auto flex items-center justify-between px-4 py-3">
+        <button onClick={() => navigate("/")} className="text-xl font-bold font-serif text-gradient-primary">
+          Echoverse
+        </button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/create")}>
+            <Plus size={16} className="mr-1" /> Create
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/history")}>
+            <Clock size={16} className="mr-1" /> History
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/settings")}>
+            <Settings size={16} />
+          </Button>
+        </div>
+      </div>
+    </nav>
   );
 };
 
-const Index = PlaceholderIndex;
+const Index = () => {
+  const { onboardingCompleted } = useSettingsStore();
+  const [showOnboarding, setShowOnboarding] = useState(!onboardingCompleted);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!onboardingCompleted && location.pathname !== "/") {
+      setShowOnboarding(true);
+    }
+  }, [onboardingCompleted, location.pathname]);
+
+  if (showOnboarding) {
+    return (
+      <OnboardingWizard
+        onComplete={() => {
+          setShowOnboarding(false);
+          navigate("/create");
+        }}
+      />
+    );
+  }
+
+  return (
+    <>
+      <Navigation />
+      <div className="pt-14">
+        <HomePage />
+      </div>
+    </>
+  );
+};
 
 export default Index;
