@@ -7,7 +7,7 @@ import { MOOD_MAP, type MoodType } from "@/lib/constants/moods";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { ArrowLeft, Volume2, Mic, Edit3, Square, Send } from "lucide-react";
+import { ArrowLeft, Volume2, Mic, Edit3, Square, Send, Volume1, Music, MessageCircle, Clapperboard, Timer, GitBranch as GitBranchIcon, Layers, RefreshCw, RotateCcw, Download, FileText, Package, Home } from "lucide-react";
 
 // Sub-components
 
@@ -71,9 +71,9 @@ const AudioLayerIndicator = ({ layers }: { layers: { type: string; name: string;
     </div>
     {layers.filter((l) => l.active).map((l) => (
       <span key={l.type} className="text-xs text-muted-foreground flex items-center gap-1">
-        {l.type === "sfx" && "🔊"}
-        {l.type === "music" && "🎵"}
-        {l.type === "tts" && "🗣"}
+        {l.type === "sfx" && <Volume1 size={12} />}
+        {l.type === "music" && <Music size={12} />}
+        {l.type === "tts" && <MessageCircle size={12} />}
         {l.name}
       </span>
     ))}
