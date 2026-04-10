@@ -22,6 +22,7 @@ export const DEFAULT_SETTINGS = {
     storyLang: "en" as "en" | "zh",
     audioQuality: "standard" as "standard" | "high",
   },
+  customTags: [] as string[],
   onboardingCompleted: false,
 };
 

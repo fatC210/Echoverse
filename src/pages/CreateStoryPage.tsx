@@ -20,10 +20,12 @@ const CreateStoryPage = () => {
   const navigate = useNavigate();
   const lang = useSettingsStore((s) => s.preferences.interfaceLang);
   const llmConfig = useSettingsStore((s) => s.llm);
+  const savedCustomTags = useSettingsStore((s) => s.customTags);
+  const setCustomTagsStore = useSettingsStore((s) => s.setCustomTags);
 
   const [premise, setPremise] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [customTags, setCustomTags] = useState<string[]>([]);
+  const [customTags, setCustomTags] = useState<string[]>(savedCustomTags || []);
   const [customInput, setCustomInput] = useState("");
   const [duration, setDuration] = useState<"short" | "medium" | "long">("medium");
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
@@ -40,13 +42,17 @@ const CreateStoryPage = () => {
   const addCustomTag = useCallback(() => {
     const tag = customInput.trim();
     if (tag && !customTags.includes(tag)) {
-      setCustomTags((prev) => [...prev, tag]);
+      const next = [...customTags, tag];
+      setCustomTags(next);
+      setCustomTagsStore(next);
       setCustomInput("");
     }
-  }, [customInput, customTags]);
+  }, [customInput, customTags, setCustomTagsStore]);
 
   const removeCustomTag = (tag: string) => {
-    setCustomTags((prev) => prev.filter((t) => t !== tag));
+    const next = customTags.filter((t) => t !== tag);
+    setCustomTags(next);
+    setCustomTagsStore(next);
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
