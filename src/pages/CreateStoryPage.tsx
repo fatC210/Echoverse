@@ -7,8 +7,7 @@ import { STORY_TAGS, type TagCategory } from "@/lib/constants/story-tags";
 import { DURATION_OPTIONS } from "@/lib/constants/defaults";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ArrowLeft, X, Loader2, ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { ArrowLeft, X, Loader2, ChevronDown, ChevronUp, Plus, Headphones } from "lucide-react";
 
 const CreateStoryPage = () => {
   const navigate = useNavigate();
@@ -59,7 +58,6 @@ const CreateStoryPage = () => {
   const startJourney = async () => {
     setIsLoading(true);
     setLoadingStep(1);
-    // Simulated loading steps
     setTimeout(() => setLoadingStep(2), 3000);
     setTimeout(() => {
       setLoadingStep(3);
@@ -74,14 +72,18 @@ const CreateStoryPage = () => {
     return (
       <div className="fixed inset-0 bg-background flex items-center justify-center">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-background" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-accent/[0.04] animate-glow-pulse" />
         </div>
         <motion.div
           className="relative z-10 text-center space-y-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
-          <Loader2 size={48} className="mx-auto text-accent animate-spin" />
+          <div className="relative w-20 h-20 mx-auto">
+            <div className="absolute inset-0 rounded-full border-2 border-accent/20" />
+            <div className="absolute inset-0 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+            <div className="absolute inset-3 rounded-full border border-accent/30 border-b-transparent animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
+          </div>
           <div className="space-y-3">
             {[
               { step: 1, text: t("create.loading.world", lang) },
@@ -95,8 +97,8 @@ const CreateStoryPage = () => {
                 animate={{ opacity: loadingStep >= s.step ? 1 : 0.3, x: 0 }}
                 transition={{ delay: s.step * 0.5 }}
               >
-                {loadingStep > s.step && "✅ "}
-                {loadingStep === s.step && <Loader2 size={14} className="inline mr-2 animate-spin" />}
+                {loadingStep > s.step && <span className="text-accent mr-2">✓</span>}
+                {loadingStep === s.step && <Loader2 size={14} className="inline mr-2 animate-spin text-accent" />}
                 {s.text}
               </motion.p>
             ))}
@@ -107,35 +109,45 @@ const CreateStoryPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-background relative">
+      {/* Background */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 opacity-[0.015]"
+          style={{
+            backgroundImage: `linear-gradient(hsl(var(--accent)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--accent)) 1px, transparent 1px)`,
+            backgroundSize: '60px 60px',
+          }}
+        />
+      </div>
+
+      <div className="relative z-10 max-w-3xl mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft size={16} />
           </Button>
-          <h1 className="text-3xl font-bold font-serif">{t("create.title", lang)}</h1>
+          <h1 className="text-3xl font-bold font-serif text-accent">{t("create.title", lang)}</h1>
         </div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-8"
+          className="space-y-6"
         >
           {/* Premise */}
-          <section className="glass-panel p-6 space-y-3">
-            <Label className="text-lg font-serif font-medium">{t("create.premise.label", lang)}</Label>
+          <section className="glass-panel-strong p-6 space-y-3">
+            <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase">{t("create.premise.label", lang)}</label>
             <textarea
               value={premise}
               onChange={(e) => setPremise(e.target.value)}
               placeholder={t("create.premise.placeholder", lang)}
               rows={4}
-              className="w-full bg-secondary border border-border rounded-lg p-4 text-foreground placeholder:text-muted-foreground/60 resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-accent/50 font-serif"
+              className="w-full input-game rounded-xl p-4 text-foreground placeholder:text-muted-foreground/40 resize-y min-h-[100px] focus:outline-none font-serif"
             />
           </section>
 
           {/* Tags */}
-          <section className="glass-panel p-6 space-y-5">
-            <h2 className="text-lg font-serif font-medium">{t("create.tags.title", lang)}</h2>
+          <section className="glass-panel-strong p-6 space-y-5">
+            <h2 className="text-xs text-muted-foreground font-mono tracking-wider uppercase">{t("create.tags.title", lang)}</h2>
 
             {(Object.keys(STORY_TAGS) as TagCategory[]).map((category) => {
               const cat = STORY_TAGS[category];
@@ -146,7 +158,7 @@ const CreateStoryPage = () => {
                 <div key={category} className="space-y-2">
                   <button
                     onClick={() => toggleCategory(category)}
-                    className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-accent transition-colors"
                   >
                     <span>{cat.icon}</span>
                     <span>{cat.label[lang]}</span>
@@ -159,10 +171,10 @@ const CreateStoryPage = () => {
                       <button
                         key={option.id}
                         onClick={() => toggleTag(option.id)}
-                        className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${
+                        className={`px-3 py-1.5 rounded-lg text-sm border transition-all duration-200 ${
                           selectedTags.includes(option.id)
-                            ? "bg-accent/20 border-accent/50 text-foreground"
-                            : "border-border hover:border-muted-foreground/50 text-muted-foreground"
+                            ? "bg-accent/15 border-accent/40 text-accent glow-accent"
+                            : "border-border/50 hover:border-accent/30 text-muted-foreground hover:text-foreground"
                         }`}
                       >
                         {option.label[lang]}
@@ -184,9 +196,14 @@ const CreateStoryPage = () => {
                   onChange={(e) => setCustomInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={t("create.tags.customPlaceholder", lang)}
-                  className="bg-secondary border-border flex-1"
+                  className="input-game flex-1"
                 />
-                <Button variant="outline" onClick={addCustomTag} disabled={!customInput.trim()}>
+                <Button
+                  variant="outline"
+                  onClick={addCustomTag}
+                  disabled={!customInput.trim()}
+                  className="border-accent/30 hover:border-accent/60 hover:bg-accent/5"
+                >
                   <Plus size={14} className="mr-1" /> {t("create.tags.add", lang)}
                 </Button>
               </div>
@@ -195,7 +212,7 @@ const CreateStoryPage = () => {
                   {customTags.map((tag) => (
                     <span
                       key={tag}
-                      className="px-3 py-1.5 rounded-lg text-sm bg-accent/20 border border-accent/50 text-foreground flex items-center gap-1"
+                      className="px-3 py-1.5 rounded-lg text-sm bg-accent/15 border border-accent/40 text-accent flex items-center gap-1"
                     >
                       {tag}
                       <button onClick={() => removeCustomTag(tag)} className="ml-1 hover:text-destructive">
@@ -209,16 +226,15 @@ const CreateStoryPage = () => {
 
             {/* Selected summary */}
             {allSelected.length > 0 && (
-              <div className="pt-3 border-t border-border">
+              <div className="pt-3 border-t border-border/30">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted-foreground">{t("create.tags.selected", lang)}</span>
-                  <Button variant="ghost" size="sm" onClick={clearAll} className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground font-mono uppercase">{t("create.tags.selected", lang)}</span>
+                  <Button variant="ghost" size="sm" onClick={clearAll} className="text-xs text-muted-foreground hover:text-destructive">
                     {t("create.tags.clearAll", lang)}
                   </Button>
                 </div>
-                <p className="text-sm text-foreground">
+                <p className="text-sm text-accent/80">
                   {allSelected.map((tag) => {
-                    // Find label for preset tags
                     for (const cat of Object.values(STORY_TAGS)) {
                       const found = cat.options.find((o) => o.id === tag);
                       if (found) return found.label[lang];
@@ -231,21 +247,21 @@ const CreateStoryPage = () => {
           </section>
 
           {/* Duration */}
-          <section className="glass-panel p-6 space-y-3">
-            <h2 className="text-lg font-serif font-medium">{t("create.duration.title", lang)}</h2>
+          <section className="glass-panel-strong p-6 space-y-3">
+            <h2 className="text-xs text-muted-foreground font-mono tracking-wider uppercase">{t("create.duration.title", lang)}</h2>
             <div className="space-y-2">
               {DURATION_OPTIONS.map((opt) => (
                 <button
                   key={opt.id}
                   onClick={() => setDuration(opt.id)}
-                  className={`w-full text-left p-3 rounded-lg border transition-all ${
+                  className={`w-full text-left p-3.5 rounded-xl border transition-all duration-200 ${
                     duration === opt.id
-                      ? "bg-accent/20 border-accent/50"
-                      : "border-border hover:border-muted-foreground/50"
+                      ? "bg-accent/15 border-accent/40 glow-accent"
+                      : "border-border/50 hover:border-accent/30"
                   }`}
                 >
-                  <span className={`text-sm ${duration === opt.id ? "text-foreground" : "text-muted-foreground"}`}>
-                    {duration === opt.id ? "● " : "○ "}
+                  <span className={`text-sm ${duration === opt.id ? "text-accent" : "text-muted-foreground"}`}>
+                    {duration === opt.id ? "◉ " : "○ "}
                     {opt.label[lang]}
                   </span>
                 </button>
@@ -258,8 +274,9 @@ const CreateStoryPage = () => {
             onClick={startJourney}
             disabled={!premise.trim()}
             size="lg"
-            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground py-6 text-lg glow-accent"
+            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground py-7 text-lg btn-game glow-accent-strong disabled:opacity-30 disabled:shadow-none"
           >
+            <Headphones size={20} className="mr-2" />
             {t("create.start", lang)}
           </Button>
         </motion.div>

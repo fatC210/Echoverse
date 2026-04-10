@@ -6,41 +6,40 @@
 
 @layer base {
   :root {
-    --background: 240 10% 4%;
-    --foreground: 210 20% 92%;
+    --background: 220 15% 5%;
+    --foreground: 180 10% 92%;
 
-    --card: 240 8% 8%;
-    --card-foreground: 210 20% 92%;
+    --card: 220 12% 8%;
+    --card-foreground: 180 10% 92%;
 
-    --popover: 240 8% 10%;
-    --popover-foreground: 210 20% 92%;
+    --popover: 220 12% 10%;
+    --popover-foreground: 180 10% 92%;
 
-    --primary: 262 83% 58%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 178 70% 45%;
+    --primary-foreground: 220 15% 5%;
 
-    --secondary: 240 6% 14%;
-    --secondary-foreground: 210 20% 85%;
+    --secondary: 220 10% 12%;
+    --secondary-foreground: 180 10% 80%;
 
-    --muted: 240 5% 16%;
-    --muted-foreground: 215 15% 55%;
+    --muted: 220 8% 15%;
+    --muted-foreground: 200 10% 50%;
 
     --accent: 178 70% 45%;
-    --accent-foreground: 0 0% 100%;
+    --accent-foreground: 220 15% 5%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 6% 18%;
-    --input: 240 6% 18%;
-    --ring: 262 83% 58%;
+    --border: 200 10% 16%;
+    --input: 200 10% 16%;
+    --ring: 178 70% 45%;
 
     --radius: 0.75rem;
 
     /* Custom tokens */
-    --glow-primary: 262 83% 58%;
     --glow-accent: 178 70% 45%;
-    --surface-glass: 240 8% 12%;
-    --surface-elevated: 240 7% 10%;
+    --surface-glass: 220 10% 10%;
+    --surface-elevated: 220 10% 9%;
 
     /* Mood colors */
     --mood-dread: 0 80% 8%;
@@ -53,14 +52,14 @@
     --mood-melancholy: 250 30% 10%;
     --mood-mystery: 280 50% 8%;
 
-    --sidebar-background: 240 8% 6%;
-    --sidebar-foreground: 210 20% 85%;
-    --sidebar-primary: 262 83% 58%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 6% 14%;
-    --sidebar-accent-foreground: 210 20% 85%;
-    --sidebar-border: 240 6% 18%;
-    --sidebar-ring: 262 83% 58%;
+    --sidebar-background: 220 12% 6%;
+    --sidebar-foreground: 180 10% 85%;
+    --sidebar-primary: 178 70% 45%;
+    --sidebar-primary-foreground: 220 15% 5%;
+    --sidebar-accent: 220 10% 12%;
+    --sidebar-accent-foreground: 180 10% 85%;
+    --sidebar-border: 200 10% 16%;
+    --sidebar-ring: 178 70% 45%;
 
     /* Fonts */
     --font-serif: 'Crimson Pro', 'Noto Serif SC', Georgia, serif;
@@ -86,15 +85,26 @@
 
 @layer utilities {
   .glass-panel {
-    @apply bg-card/60 backdrop-blur-xl border border-border/50 rounded-xl;
+    background: hsl(var(--card) / 0.5);
+    backdrop-filter: blur(24px);
+    border: 1px solid hsl(var(--border) / 0.4);
+    border-radius: 1rem;
   }
 
-  .glow-primary {
-    box-shadow: 0 0 20px hsl(var(--accent) / 0.15), 0 0 60px hsl(var(--accent) / 0.05);
+  .glass-panel-strong {
+    background: hsl(var(--card) / 0.7);
+    backdrop-filter: blur(32px);
+    border: 1px solid hsl(var(--accent) / 0.15);
+    border-radius: 1rem;
+    box-shadow: 0 0 40px hsl(var(--accent) / 0.05), inset 0 1px 0 hsl(var(--accent) / 0.05);
   }
 
   .glow-accent {
-    box-shadow: 0 0 20px hsl(var(--accent) / 0.15), 0 0 60px hsl(var(--accent) / 0.05);
+    box-shadow: 0 0 20px hsl(var(--accent) / 0.2), 0 0 60px hsl(var(--accent) / 0.08);
+  }
+
+  .glow-accent-strong {
+    box-shadow: 0 0 20px hsl(var(--accent) / 0.3), 0 0 60px hsl(var(--accent) / 0.12), 0 0 100px hsl(var(--accent) / 0.05);
   }
 
   .text-gradient-primary {
@@ -104,6 +114,77 @@
   .narration-text {
     font-family: var(--font-serif);
     @apply text-lg leading-relaxed tracking-wide;
+  }
+
+  /* Game-style button glow */
+  .btn-game {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  .btn-game::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, hsl(var(--accent) / 0.15), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+  }
+  .btn-game:hover::before {
+    transform: translateX(100%);
+  }
+  .btn-game::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, hsl(var(--accent) / 0.4), transparent 50%, hsl(var(--accent) / 0.2));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  /* Floating particle dots */
+  .particle-field {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .input-game {
+    background: hsl(var(--secondary) / 0.6);
+    border: 1px solid hsl(var(--border) / 0.5);
+    transition: all 0.3s ease;
+  }
+  .input-game:focus {
+    border-color: hsl(var(--accent) / 0.5);
+    box-shadow: 0 0 12px hsl(var(--accent) / 0.1), inset 0 0 12px hsl(var(--accent) / 0.03);
+  }
+
+  /* Scan line effect for onboarding */
+  .scanline {
+    position: relative;
+    overflow: hidden;
+  }
+  .scanline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: hsl(var(--accent) / 0.3);
+    animation: scanline 6s linear infinite;
+    z-index: 1;
+  }
+
+  /* Status indicator dot */
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+    box-shadow: 0 0 6px currentColor;
   }
 }
 
@@ -138,8 +219,8 @@
 
 /* Atmospheric animations */
 @keyframes pulse-slow {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
 }
 
 @keyframes drift {
@@ -159,9 +240,40 @@
   90% { opacity: 0.7; }
 }
 
+@keyframes scanline {
+  0% { top: -2px; }
+  100% { top: 100%; }
+}
+
+@keyframes float-up {
+  0% { transform: translateY(100vh) scale(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+}
+
+@keyframes orbit {
+  0% { transform: rotate(0deg) translateX(120px) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(120px) rotate(-360deg); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.3; filter: blur(20px); }
+  50% { opacity: 0.6; filter: blur(30px); }
+}
+
+@keyframes border-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 .animate-pulse-slow { animation: pulse-slow 8s ease-in-out infinite; }
 .animate-drift { animation: drift 12s ease-in-out infinite; }
 .animate-flicker { animation: flicker 4s ease-in-out infinite; }
+.animate-float-up { animation: float-up 15s linear infinite; }
+.animate-orbit { animation: orbit 20s linear infinite; }
+.animate-glow-pulse { animation: glow-pulse 4s ease-in-out infinite; }
 
 /* Waveform animation for audio indicator */
 @keyframes wave {

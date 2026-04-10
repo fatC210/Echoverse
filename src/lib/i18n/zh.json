@@ -26,6 +26,7 @@
   "onboarding.turbopuffer.apiKey": "API Key",
   "onboarding.turbopuffer.baseUrl": "API 基础地址（可选，一般无需修改）",
   "onboarding.turbopuffer.hint": "在 turbopuffer.com 控制台获取",
+  "onboarding.turbopuffer.ready": "已检测到 Key — 准备就绪",
   "onboarding.complete.title": "一切就绪！",
   "onboarding.complete.saved": "你的所有配置已安全保存在本地浏览器中。",
   "onboarding.complete.modify": "随时可以在设置页中修改。",

@@ -5,9 +5,8 @@ import { t } from "@/lib/i18n";
 import { useSettingsStore } from "@/lib/store/settings-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ELEVENLABS_VOICES } from "@/lib/constants/defaults";
-import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, ArrowLeft, Trash2, Play, Square } from "lucide-react";
+import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, ArrowLeft, Trash2, Play, Square, Brain, Music, Zap } from "lucide-react";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -40,9 +39,6 @@ const SettingsPage = () => {
     } catch { setTestStatuses((p) => ({ ...p, el: "error" })); }
   };
 
-  // turbopuffer API doesn't support CORS, skip browser-side test
-
-
   const previewVoice = async (voiceId: string) => {
     if (playingVoice) { setPlayingVoice(null); return; }
     setPlayingVoice(voiceId);
@@ -72,99 +68,121 @@ const SettingsPage = () => {
 
   const TestButton = ({ status, onTest }: { status: string; onTest: () => void }) => (
     <div className="flex items-center gap-2">
-      <Button variant="outline" size="sm" onClick={onTest} disabled={status === "testing"}>
+      <Button variant="outline" size="sm" onClick={onTest} disabled={status === "testing"} className="border-accent/30 hover:border-accent/60 hover:bg-accent/5">
         {status === "testing" && <Loader2 size={14} className="mr-1 animate-spin" />}
         {t("onboarding.testConnection", lang)}
       </Button>
-      {status === "success" && <CheckCircle2 size={16} className="text-emerald-400" />}
-      {status === "error" && <XCircle size={16} className="text-destructive" />}
+      {status === "success" && <span className="flex items-center gap-1 text-xs text-accent"><CheckCircle2 size={14} /></span>}
+      {status === "error" && <span className="flex items-center gap-1 text-xs text-destructive"><XCircle size={14} /></span>}
     </div>
   );
 
   const KeyInput = ({ label, value, onChange, id }: { label: string; value: string; onChange: (v: string) => void; id: string }) => (
     <div>
-      <Label className="text-sm text-muted-foreground">{label}</Label>
-      <div className="relative mt-1">
+      <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase mb-1 block">{label}</label>
+      <div className="relative">
         <Input
           type={showKeys[id] ? "text" : "password"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="bg-secondary border-border pr-10"
+          className="input-game pr-10"
         />
-        <button type="button" onClick={() => toggleKey(id)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-          {showKeys[id] ? <EyeOff size={16} /> : <Eye size={16} />}
+        <button type="button" onClick={() => toggleKey(id)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-accent transition-colors">
+          {showKeys[id] ? <EyeOff size={14} /> : <Eye size={14} />}
         </button>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-background relative">
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 opacity-[0.015]"
+          style={{
+            backgroundImage: `linear-gradient(hsl(var(--accent)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--accent)) 1px, transparent 1px)`,
+            backgroundSize: '60px 60px',
+          }}
+        />
+      </div>
+
+      <div className="relative z-10 max-w-2xl mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/")}><ArrowLeft size={16} /></Button>
-          <h1 className="text-3xl font-bold font-serif">{t("settings.title", lang)}</h1>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground">
+            <ArrowLeft size={16} />
+          </Button>
+          <h1 className="text-3xl font-bold font-serif text-accent">{t("settings.title", lang)}</h1>
         </div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-          {/* API Keys */}
-          <section className="glass-panel p-6 space-y-6">
-            <h2 className="text-xl font-semibold font-serif">{t("settings.apiKeys", lang)}</h2>
-
-            {/* LLM */}
-            <div className="space-y-3 pb-4 border-b border-border">
-              <h3 className="text-sm font-medium flex items-center gap-2">🧠 LLM</h3>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+          {/* LLM */}
+          <section className="glass-panel-strong p-6 space-y-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
+                <Brain size={16} className="text-accent" />
+              </div>
+              <h2 className="text-lg font-semibold font-serif">LLM</h2>
+            </div>
+            <div className="space-y-3">
               <div>
-                <Label className="text-sm text-muted-foreground">{t("onboarding.llm.baseUrl", lang)}</Label>
-                <Input value={settings.llm.baseUrl} onChange={(e) => settings.updateLlm({ baseUrl: e.target.value })} className="bg-secondary border-border mt-1" />
+                <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase mb-1 block">{t("onboarding.llm.baseUrl", lang)}</label>
+                <Input value={settings.llm.baseUrl} onChange={(e) => settings.updateLlm({ baseUrl: e.target.value })} className="input-game" />
               </div>
               <KeyInput label={t("onboarding.llm.apiKey", lang)} value={settings.llm.apiKey} onChange={(v) => settings.updateLlm({ apiKey: v })} id="llm" />
               <div>
-                <Label className="text-sm text-muted-foreground">{t("onboarding.llm.model", lang)}</Label>
-                <Input value={settings.llm.model} onChange={(e) => settings.updateLlm({ model: e.target.value })} className="bg-secondary border-border mt-1" />
+                <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase mb-1 block">{t("onboarding.llm.model", lang)}</label>
+                <Input value={settings.llm.model} onChange={(e) => settings.updateLlm({ model: e.target.value })} className="input-game" />
               </div>
               <div>
-                <Label className="text-sm text-muted-foreground">{t("onboarding.llm.embeddingModel", lang)}</Label>
-                <Input value={settings.llm.embeddingModel} onChange={(e) => settings.updateLlm({ embeddingModel: e.target.value })} className="bg-secondary border-border mt-1" />
+                <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase mb-1 block">{t("onboarding.llm.embeddingModel", lang)}</label>
+                <Input value={settings.llm.embeddingModel} onChange={(e) => settings.updateLlm({ embeddingModel: e.target.value })} className="input-game" />
               </div>
               <TestButton status={testStatuses.llm || "idle"} onTest={testLlm} />
             </div>
+          </section>
 
-            {/* ElevenLabs */}
-            <div className="space-y-3 pb-4 border-b border-border">
-              <h3 className="text-sm font-medium flex items-center gap-2">🎵 ElevenLabs</h3>
-              <KeyInput label={t("onboarding.elevenlabs.apiKey", lang)} value={settings.elevenlabs.apiKey} onChange={(v) => settings.updateElevenlabs({ apiKey: v })} id="el" />
-              <TestButton status={testStatuses.el || "idle"} onTest={testElevenlabs} />
+          {/* ElevenLabs */}
+          <section className="glass-panel-strong p-6 space-y-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
+                <Music size={16} className="text-accent" />
+              </div>
+              <h2 className="text-lg font-semibold font-serif">ElevenLabs</h2>
             </div>
+            <KeyInput label={t("onboarding.elevenlabs.apiKey", lang)} value={settings.elevenlabs.apiKey} onChange={(v) => settings.updateElevenlabs({ apiKey: v })} id="el" />
+            <TestButton status={testStatuses.el || "idle"} onTest={testElevenlabs} />
+          </section>
 
-            {/* turbopuffer */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium flex items-center gap-2">🔍 turbopuffer</h3>
-              <KeyInput label={t("onboarding.turbopuffer.apiKey", lang)} value={settings.turbopuffer.apiKey} onChange={(v) => settings.updateTurbopuffer({ apiKey: v })} id="tp" />
-              <p className="text-xs text-muted-foreground">💡 {t("onboarding.turbopuffer.hint", lang)}</p>
+          {/* turbopuffer */}
+          <section className="glass-panel-strong p-6 space-y-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
+                <Zap size={16} className="text-accent" />
+              </div>
+              <h2 className="text-lg font-semibold font-serif">turbopuffer</h2>
             </div>
+            <KeyInput label={t("onboarding.turbopuffer.apiKey", lang)} value={settings.turbopuffer.apiKey} onChange={(v) => settings.updateTurbopuffer({ apiKey: v })} id="tp" />
           </section>
 
           {/* Voice */}
-          <section className="glass-panel p-6 space-y-4">
-            <h2 className="text-xl font-semibold font-serif">{t("settings.voiceSettings", lang)}</h2>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
-              <span>🗣</span>
-              <span className="flex-1">{settings.voice.voiceName || "Not selected"} — {settings.voice.voiceDescription}</span>
+          <section className="glass-panel-strong p-6 space-y-4">
+            <h2 className="text-lg font-semibold font-serif">{t("settings.voiceSettings", lang)}</h2>
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/30 border border-border/30">
+              <span className="text-accent">🗣</span>
+              <span className="flex-1 text-sm">{settings.voice.voiceName || "Not selected"} — {settings.voice.voiceDescription}</span>
             </div>
-            <div className="space-y-1 max-h-48 overflow-y-auto">
+            <div className="space-y-1.5 max-h-48 overflow-y-auto">
               {ELEVENLABS_VOICES.map((v) => (
                 <button
                   key={v.id}
                   onClick={() => settings.updateVoice({ voiceId: v.id, voiceName: v.name, voiceDescription: `${v.gender === "female" ? "♀" : "♂"} ${v.description[lang]}` })}
-                  className={`w-full flex items-center justify-between p-2.5 rounded-lg text-sm transition-colors ${settings.voice.voiceId === v.id ? "bg-accent/20 border border-accent/50" : "hover:bg-muted"}`}
+                  className={`w-full flex items-center justify-between p-2.5 rounded-lg text-sm transition-all ${settings.voice.voiceId === v.id ? "bg-accent/15 border border-accent/40 glow-accent" : "hover:bg-muted/50 border border-transparent"}`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className={`w-3 h-3 rounded-full border-2 ${settings.voice.voiceId === v.id ? "bg-accent border-accent" : "border-muted-foreground"}`} />
+                    <div className={`w-2.5 h-2.5 rounded-full ${settings.voice.voiceId === v.id ? "bg-accent status-dot" : "bg-muted-foreground/30"}`} />
                     <span>{v.name}</span>
                     <span className="text-muted-foreground text-xs">{v.description[lang]}</span>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); previewVoice(v.id); }} className="h-7 px-2">
+                  <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); previewVoice(v.id); }} className="h-7 px-2 text-muted-foreground hover:text-accent">
                     {playingVoice === v.id ? <Square size={12} /> : <Play size={12} />}
                   </Button>
                 </button>
@@ -173,37 +191,40 @@ const SettingsPage = () => {
           </section>
 
           {/* Preferences */}
-          <section className="glass-panel p-6 space-y-4">
-            <h2 className="text-xl font-semibold font-serif">{t("settings.preferences", lang)}</h2>
+          <section className="glass-panel-strong p-6 space-y-4">
+            <h2 className="text-lg font-semibold font-serif">{t("settings.preferences", lang)}</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm text-muted-foreground">{t("settings.interfaceLang", lang)}</Label>
-                <div className="flex gap-2 mt-1">
+                <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase mb-2 block">{t("settings.interfaceLang", lang)}</label>
+                <div className="flex gap-2">
                   {(["en", "zh"] as const).map((l) => (
                     <Button key={l} variant={settings.preferences.interfaceLang === l ? "default" : "outline"} size="sm"
-                      onClick={() => settings.updatePreferences({ interfaceLang: l })}>
+                      onClick={() => settings.updatePreferences({ interfaceLang: l })}
+                      className={settings.preferences.interfaceLang === l ? "bg-accent text-accent-foreground" : "border-accent/30 hover:border-accent/60"}>
                       {l === "en" ? "EN" : "中文"}
                     </Button>
                   ))}
                 </div>
               </div>
               <div>
-                <Label className="text-sm text-muted-foreground">{t("settings.storyLang", lang)}</Label>
-                <div className="flex gap-2 mt-1">
+                <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase mb-2 block">{t("settings.storyLang", lang)}</label>
+                <div className="flex gap-2">
                   {(["en", "zh"] as const).map((l) => (
                     <Button key={l} variant={settings.preferences.storyLang === l ? "default" : "outline"} size="sm"
-                      onClick={() => settings.updatePreferences({ storyLang: l })}>
+                      onClick={() => settings.updatePreferences({ storyLang: l })}
+                      className={settings.preferences.storyLang === l ? "bg-accent text-accent-foreground" : "border-accent/30 hover:border-accent/60"}>
                       {l === "en" ? "EN" : "中文"}
                     </Button>
                   ))}
                 </div>
               </div>
               <div>
-                <Label className="text-sm text-muted-foreground">{t("settings.audioQuality", lang)}</Label>
-                <div className="flex gap-2 mt-1">
+                <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase mb-2 block">{t("settings.audioQuality", lang)}</label>
+                <div className="flex gap-2">
                   {(["standard", "high"] as const).map((q) => (
                     <Button key={q} variant={settings.preferences.audioQuality === q ? "default" : "outline"} size="sm"
-                      onClick={() => settings.updatePreferences({ audioQuality: q })}>
+                      onClick={() => settings.updatePreferences({ audioQuality: q })}
+                      className={settings.preferences.audioQuality === q ? "bg-accent text-accent-foreground" : "border-accent/30 hover:border-accent/60"}>
                       {t(`settings.${q}`, lang)}
                     </Button>
                   ))}
@@ -213,7 +234,7 @@ const SettingsPage = () => {
           </section>
 
           {/* Danger */}
-          <section className="glass-panel p-6 border-destructive/30">
+          <section className="glass-panel-strong p-6 border-destructive/20">
             <Button variant="destructive" onClick={clearAll} className="w-full">
               <Trash2 size={16} className="mr-2" />
               {t("settings.clearAll", lang)}

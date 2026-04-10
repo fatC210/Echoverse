@@ -1,7 +1,8 @@
+import { motion } from "framer-motion";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { useSettingsStore } from "@/lib/store/settings-store";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Headphones, Brain, Music, Zap, Mic } from "lucide-react";
 
 interface CompletionStepProps {
   onComplete: () => void;
@@ -16,38 +17,57 @@ const CompletionStep = ({ onComplete, lang }: CompletionStepProps) => {
     onComplete();
   };
 
+  const items = [
+    { icon: <Brain size={16} />, label: lang === "zh" ? "LLM 服务" : "LLM Service", status: true },
+    { icon: <Music size={16} />, label: "ElevenLabs", status: true },
+    { icon: <Zap size={16} />, label: "turbopuffer", status: true },
+    { icon: <Mic size={16} />, label: `${lang === "zh" ? "旁白声音" : "Voice"}: ${voice.voiceName || "—"}`, status: !!voice.voiceId },
+  ];
+
   return (
-    <div className="glass-panel p-8 text-center space-y-6">
-      <div className="text-5xl mb-2">✅</div>
+    <div className="glass-panel-strong p-8 text-center space-y-6 scanline">
+      <motion.div
+        initial={{ scale: 0, rotate: -180 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ duration: 0.6, ease: "backOut" }}
+        className="relative inline-block"
+      >
+        <div className="w-20 h-20 mx-auto rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center glow-accent-strong">
+          <CheckCircle2 size={36} className="text-accent" />
+        </div>
+      </motion.div>
+
       <h1 className="text-3xl font-bold font-serif text-gradient-primary">
         {t("onboarding.complete.title", lang)}
       </h1>
 
-      <div className="space-y-3 text-left">
-        {[
-          { icon: "🧠", label: "LLM Service", status: true },
-          { icon: "🎵", label: "ElevenLabs", status: true },
-          { icon: "🔍", label: "turbopuffer", status: true },
-          { icon: "🗣", label: `Narration Voice: ${voice.voiceName || "—"}`, status: !!voice.voiceId },
-        ].map((item) => (
-          <div key={item.label} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
-            <span>{item.icon}</span>
-            <span className="flex-1 text-sm">{item.label}</span>
-            <CheckCircle2 size={18} className={item.status ? "text-emerald-400" : "text-muted-foreground"} />
-          </div>
+      <div className="space-y-2">
+        {items.map((item, i) => (
+          <motion.div
+            key={item.label}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 + i * 0.1 }}
+            className="flex items-center gap-3 p-3 rounded-xl bg-secondary/30 border border-border/30"
+          >
+            <span className="text-accent">{item.icon}</span>
+            <span className="flex-1 text-sm text-left">{item.label}</span>
+            <div className={`w-2 h-2 rounded-full ${item.status ? 'bg-accent status-dot' : 'bg-muted-foreground'}`} />
+          </motion.div>
         ))}
       </div>
 
-      <p className="text-sm text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         {t("onboarding.complete.saved", lang)}<br />
         {t("onboarding.complete.modify", lang)}
       </p>
 
       <Button
         onClick={handleComplete}
-        className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
         size="lg"
+        className="w-full bg-accent hover:bg-accent/90 text-accent-foreground btn-game glow-accent-strong"
       >
+        <Headphones size={18} className="mr-2" />
         {t("onboarding.complete.cta", lang)}
       </Button>
     </div>
