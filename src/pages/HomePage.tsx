@@ -6,27 +6,28 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, Brain, Music, ArrowRight } from "lucide-react";
 import EchoverseLogo from "@/components/EchoverseLogo";
 
-/* Animated ring that pulses outward */
-const PulseRing = ({ delay, size }: { delay: number; size: number }) => (
-  <motion.div
-    className="absolute top-1/2 left-1/2 rounded-full border border-accent/10"
-    style={{ width: size, height: size, marginLeft: -size / 2, marginTop: -size / 2 }}
-    initial={{ opacity: 0.6, scale: 0.8 }}
-    animate={{ opacity: 0, scale: 1.5 }}
-    transition={{ duration: 6, delay, repeat: Infinity, ease: "easeOut" }}
-  />
-);
-
-const FloatingParticle = ({ delay, x, y, size }: { delay: number; x: number; y: number; size: number }) => (
+const FloatingParticle = ({ delay, x, y, size, duration }: { delay: number; x: number; y: number; size: number; duration: number }) => (
   <motion.div
     className="absolute rounded-full bg-accent"
     style={{ left: `${x}%`, top: `${y}%`, width: size, height: size }}
     animate={{
-      y: [0, -30, 0],
-      x: [0, Math.random() > 0.5 ? 15 : -15, 0],
-      opacity: [0, 0.6, 0],
+      y: [0, -(20 + Math.random() * 40), 0],
+      x: [0, (Math.random() - 0.5) * 50, 0],
+      opacity: [0, 0.5 + Math.random() * 0.3, 0],
+      scale: [0.5, 1, 0.5],
     }}
-    transition={{ duration: 8 + Math.random() * 6, delay, repeat: Infinity, ease: "easeInOut" }}
+    transition={{ duration, delay, repeat: Infinity, ease: "easeInOut" }}
+  />
+);
+
+/* Concentric pulse ring */
+const PulseRing = ({ delay, size }: { delay: number; size: number }) => (
+  <motion.div
+    className="absolute top-1/2 left-1/2 rounded-full border border-accent/10"
+    style={{ width: size, height: size, marginLeft: -size / 2, marginTop: -size / 2 }}
+    initial={{ opacity: 0.5, scale: 0.8 }}
+    animate={{ opacity: 0, scale: 1.4 }}
+    transition={{ duration: 6, delay, repeat: Infinity, ease: "easeOut" }}
   />
 );
 
@@ -34,11 +35,13 @@ const HeroSection = () => {
   const lang = useSettingsStore((s) => s.preferences.interfaceLang);
   const navigate = useNavigate();
 
-  const particles = Array.from({ length: 30 }, (_, i) => ({
-    delay: i * 0.8,
+  // More particles, spread across whole viewport
+  const particles = Array.from({ length: 50 }, (_, i) => ({
+    delay: i * 0.5 + Math.random() * 2,
     x: Math.random() * 100,
     y: Math.random() * 100,
-    size: 1.5 + Math.random() * 3,
+    size: 1 + Math.random() * 3.5,
+    duration: 6 + Math.random() * 10,
   }));
 
   return (
@@ -48,37 +51,32 @@ const HeroSection = () => {
         <div className="absolute inset-0 bg-background" />
 
         {/* Concentric pulse rings */}
-        <PulseRing delay={0} size={300} />
-        <PulseRing delay={1.5} size={500} />
+        <PulseRing delay={0} size={250} />
+        <PulseRing delay={1} size={400} />
+        <PulseRing delay={2} size={550} />
         <PulseRing delay={3} size={700} />
-        <PulseRing delay={4.5} size={900} />
+        <PulseRing delay={4} size={850} />
+        <PulseRing delay={5} size={1000} />
 
         {/* Central glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px]">
           <motion.div
             className="absolute inset-0 rounded-full bg-accent/[0.06]"
-            animate={{ scale: [1, 1.1, 1], opacity: [0.04, 0.08, 0.04] }}
+            animate={{ scale: [1, 1.15, 1], opacity: [0.04, 0.09, 0.04] }}
             transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
             style={{ filter: 'blur(60px)' }}
           />
         </div>
 
-        {/* Floating particles */}
+        {/* Dense floating particles */}
         {particles.map((p, i) => <FloatingParticle key={i} {...p} />)}
 
-        {/* Grid */}
+        {/* Subtle grid */}
         <div className="absolute inset-0 opacity-[0.02]"
           style={{
             backgroundImage: `linear-gradient(hsl(var(--accent)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--accent)) 1px, transparent 1px)`,
             backgroundSize: '80px 80px',
           }}
-        />
-
-        {/* Horizontal scan line */}
-        <motion.div
-          className="absolute left-0 right-0 h-[1px] bg-accent/10"
-          animate={{ top: ['0%', '100%'] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
         />
       </div>
 
