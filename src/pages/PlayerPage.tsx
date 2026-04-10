@@ -207,7 +207,7 @@ const StoryEndScreen = ({
       className="fixed inset-0 bg-background/95 flex items-center justify-center z-50"
     >
       <div className="max-w-lg w-full mx-4 text-center space-y-6">
-        <div className="text-5xl mb-2">🎬</div>
+        <Clapperboard size={40} className="mx-auto mb-2 text-accent" />
         <h1 className="text-2xl font-bold font-serif text-gradient-primary">
           「{title}」— {t("end.title", lang)}
         </h1>
@@ -216,10 +216,10 @@ const StoryEndScreen = ({
         </p>
 
         <div className="glass-panel p-6 text-left space-y-3">
-          <div className="flex justify-between text-sm"><span className="text-muted-foreground">⏱ {t("end.duration", lang)}</span><span>{stats.duration}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-muted-foreground">🔀 {t("end.decisions", lang)}</span><span>{stats.decisions}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-muted-foreground">🎵 {t("end.audioLayers", lang)}</span><span>{stats.audioLayers}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-muted-foreground">♻️ {t("end.cacheHit", lang)}</span><span>{stats.cacheHit}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-muted-foreground flex items-center gap-1.5"><Timer size={14} /> {t("end.duration", lang)}</span><span>{stats.duration}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-muted-foreground flex items-center gap-1.5"><GitBranchIcon size={14} /> {t("end.decisions", lang)}</span><span>{stats.decisions}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-muted-foreground flex items-center gap-1.5"><Layers size={14} /> {t("end.audioLayers", lang)}</span><span>{stats.audioLayers}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-muted-foreground flex items-center gap-1.5"><RefreshCw size={14} /> {t("end.cacheHit", lang)}</span><span>{stats.duration}</span></div>
         </div>
 
         <div className="glass-panel p-4 space-y-2">
