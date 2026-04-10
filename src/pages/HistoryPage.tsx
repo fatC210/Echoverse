@@ -8,34 +8,34 @@ import { ArrowLeft, Play, RotateCcw, Download, Trash2, Clock, GitBranch, Clapper
 
 interface StoryEntry {
   id: string;
-  title: string;
-  genre: string;
-  tags: string[];
+  titleKey: string;
+  genreKey: string;
+  tagKeys: string[];
   status: "playing" | "completed";
   createdAt: string;
   totalDurationSec: number;
   totalDecisions: number;
-  endingName?: string;
+  endingKey?: string;
 }
 
 // Demo data
 const DEMO_STORIES: StoryEntry[] = [
   {
     id: "demo_1",
-    title: "Echo Station",
-    genre: "Sci-Fi Thriller",
-    tags: ["Space", "Suspense", "Scientist"],
+    titleKey: "history.demo1.title",
+    genreKey: "history.demo1.genre",
+    tagKeys: ["history.tag.space", "history.tag.suspense", "history.tag.scientist"],
     status: "completed",
     createdAt: "2026-04-08T10:30:00Z",
     totalDurationSec: 1427,
     totalDecisions: 7,
-    endingName: "Symbiosis",
+    endingKey: "history.demo1.ending",
   },
   {
     id: "demo_2",
-    title: "The Midnight Garden",
-    genre: "Fantasy Mystery",
-    tags: ["Dreamscape", "Mystery", "Child"],
+    titleKey: "history.demo2.title",
+    genreKey: "history.demo2.genre",
+    tagKeys: ["history.tag.dreamscape", "history.tag.mystery", "history.tag.child"],
     status: "playing",
     createdAt: "2026-04-09T14:20:00Z",
     totalDurationSec: 890,
@@ -43,14 +43,14 @@ const DEMO_STORIES: StoryEntry[] = [
   },
   {
     id: "demo_3",
-    title: "Last Train to Nowhere",
-    genre: "Horror",
-    tags: ["Victorian", "Horror", "Detective"],
+    titleKey: "history.demo3.title",
+    genreKey: "history.demo3.genre",
+    tagKeys: ["history.tag.victorian", "history.tag.horror", "history.tag.detective"],
     status: "completed",
     createdAt: "2026-04-07T22:00:00Z",
     totalDurationSec: 2100,
     totalDecisions: 9,
-    endingName: "The Truth",
+    endingKey: "history.demo3.ending",
   },
 ];
 
