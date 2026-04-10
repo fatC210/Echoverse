@@ -632,7 +632,7 @@ const PlayerPage = () => {
   const handleChoice = useCallback((choiceId: string, text?: string) => {
     setShowChoices(false);
 
-    const chosenOption = currentScene.choices.find(c => c.id === choiceId);
+    const chosenOption = activeChoices.find(c => c.id === choiceId);
     const choiceText = text || chosenOption?.text || choiceId;
 
     setStoryLog(prev => {
@@ -643,7 +643,6 @@ const PlayerPage = () => {
 
     const nextId = chosenOption?.next;
     if (!nextId || !sceneGraph[nextId]) {
-      // No next scene — story ends
       setShowEndScreen(true);
       return;
     }
@@ -655,7 +654,11 @@ const PlayerPage = () => {
     setNarrationText(nextScene.narration);
     setChapterTitle(nextScene.chapter);
     setStoryLog(prev => [...prev, { chapter: nextScene.chapter, narration: nextScene.narration }]);
-  }, [currentSceneId, sceneGraph, currentScene]);
+
+    // Pick new random choices for the next scene
+    const picked = pickRandom(nextScene.choices, 3);
+    setActiveChoices(picked.map((c, i) => ({ ...c, label: ["A", "B", "C"][i], id: ["a", "b", "c"][i] })));
+  }, [activeChoices, sceneGraph, pickRandom]);
   const handleVolumeChange = (key: string, val: number) => {
     setVolumes((prev) => ({ ...prev, [key]: val }));
   };
