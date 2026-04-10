@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { t } from "@/lib/i18n";
@@ -57,14 +57,16 @@ const NarrationDisplay = ({ text, isTyping }: { text: string; isTyping: boolean 
   );
 };
 
+const WAVE_HEIGHTS = [8, 14, 6, 16, 10, 12, 7, 15];
+
 const AudioLayerIndicator = ({ layers }: { layers: { type: string; name: string; active: boolean }[] }) => (
   <div className="flex items-center justify-center gap-4 px-4 py-1 text-muted-foreground">
     <div className="flex items-center gap-[1px] h-4">
-      {Array.from({ length: 8 }).map((_, i) => (
+      {WAVE_HEIGHTS.map((h, i) => (
         <div
           key={i}
           className="wave-bar"
-          style={{ animationDelay: `${i * 0.15}s`, height: `${4 + Math.random() * 12}px` }}
+          style={{ animationDelay: `${i * 0.15}s`, height: `${h}px` }}
         />
       ))}
     </div>
@@ -378,11 +380,11 @@ const PlayerPage = () => {
   const [chapterTitle, setChapterTitle] = useState(currentScene.chapter);
   const [volumes, setVolumes] = useState({ master: 1, narration: 1, sfx: 0.7, music: 0.4 });
 
-  const audioLayers = [
+  const audioLayers = useMemo(() => [
     { type: "sfx", name: storyLang === "zh" ? "雨声" : "Rain", active: true },
     { type: "music", name: storyLang === "zh" ? "氛围音乐" : "Ambient", active: true },
     { type: "tts", name: t("player.narrating", lang), active: true },
-  ];
+  ], [storyLang, lang]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
