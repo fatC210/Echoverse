@@ -226,18 +226,6 @@ const SettingsPage = () => {
                   ))}
                 </div>
               </div>
-              <div>
-                <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase mb-2 block">{t("settings.audioQuality", lang)}</label>
-                <div className="flex gap-2">
-                  {(["standard", "high"] as const).map((q) => (
-                    <Button key={q} variant={settings.preferences.audioQuality === q ? "default" : "outline"} size="sm"
-                      onClick={() => settings.updatePreferences({ audioQuality: q })}
-                      className={settings.preferences.audioQuality === q ? "bg-accent text-accent-foreground" : "border-accent/30 hover:border-accent/60"}>
-                      {t(`settings.${q}`, lang)}
-                    </Button>
-                  ))}
-                </div>
-              </div>
             </div>
           </section>
 
