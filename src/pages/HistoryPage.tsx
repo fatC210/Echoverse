@@ -104,7 +104,8 @@ const HistoryPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="glass-panel p-5 flex flex-col hover:border-accent/30 transition-colors group"
+                className="glass-panel p-5 flex flex-col hover:border-accent/30 transition-colors group cursor-pointer"
+                onClick={() => navigate(`/play/${story.id}`)}
               >
                 <div className="flex items-start justify-between">
                   <div>
