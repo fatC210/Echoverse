@@ -61,10 +61,9 @@ const CreateStoryPage = () => {
 
   const clearAll = () => {
     setSelectedTags([]);
-    setCustomTags([]);
   };
 
-  const allSelected = [...selectedTags, ...customTags];
+  const allSelected = selectedTags;
 
   const toggleCategory = (cat: string) => {
     setExpandedCategories((prev) => ({ ...prev, [cat]: !prev[cat] }));
