@@ -40,15 +40,8 @@ const SettingsPage = () => {
     } catch { setTestStatuses((p) => ({ ...p, el: "error" })); }
   };
 
-  const testTurbopuffer = async () => {
-    setTestStatuses((p) => ({ ...p, tp: "testing" }));
-    try {
-      const res = await fetch(`${settings.turbopuffer.baseUrl}/v1/vectors`, {
-        headers: { Authorization: `Bearer ${settings.turbopuffer.apiKey}` },
-      });
-      setTestStatuses((p) => ({ ...p, tp: res.ok ? "success" : "error" }));
-    } catch { setTestStatuses((p) => ({ ...p, tp: "error" })); }
-  };
+  // turbopuffer API doesn't support CORS, skip browser-side test
+
 
   const previewVoice = async (voiceId: string) => {
     if (playingVoice) { setPlayingVoice(null); return; }
@@ -148,7 +141,7 @@ const SettingsPage = () => {
             <div className="space-y-3">
               <h3 className="text-sm font-medium flex items-center gap-2">🔍 turbopuffer</h3>
               <KeyInput label={t("onboarding.turbopuffer.apiKey", lang)} value={settings.turbopuffer.apiKey} onChange={(v) => settings.updateTurbopuffer({ apiKey: v })} id="tp" />
-              <TestButton status={testStatuses.tp || "idle"} onTest={testTurbopuffer} />
+              <p className="text-xs text-muted-foreground">💡 {t("onboarding.turbopuffer.hint", lang)}</p>
             </div>
           </section>
 
