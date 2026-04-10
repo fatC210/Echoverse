@@ -141,7 +141,7 @@ const SettingsPage = () => {
             <div className="space-y-3">
               <h3 className="text-sm font-medium flex items-center gap-2">🔍 turbopuffer</h3>
               <KeyInput label={t("onboarding.turbopuffer.apiKey", lang)} value={settings.turbopuffer.apiKey} onChange={(v) => settings.updateTurbopuffer({ apiKey: v })} id="tp" />
-              <TestButton status={testStatuses.tp || "idle"} onTest={testTurbopuffer} />
+              <p className="text-xs text-muted-foreground">💡 {t("onboarding.turbopuffer.hint", lang)}</p>
             </div>
           </section>
 
