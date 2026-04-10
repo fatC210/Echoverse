@@ -21,6 +21,7 @@ interface SettingsStore extends EchoSettings {
   updateTurbopuffer: (tp: Partial<EchoSettings["turbopuffer"]>) => void;
   updateVoice: (voice: Partial<EchoSettings["voice"]>) => void;
   updatePreferences: (prefs: Partial<EchoSettings["preferences"]>) => void;
+  setCustomTags: (tags: string[]) => void;
   setOnboardingCompleted: (v: boolean) => void;
   clearAll: () => void;
   reload: () => void;
@@ -53,6 +54,11 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     const next = { ...get(), preferences: { ...get().preferences, ...prefs } };
     saveSettings(next);
     set({ preferences: next.preferences });
+  },
+  setCustomTags: (tags) => {
+    const next = { ...get(), customTags: tags };
+    saveSettings(next);
+    set({ customTags: tags });
   },
   setOnboardingCompleted: (v) => {
     const next = { ...get(), onboardingCompleted: v };
