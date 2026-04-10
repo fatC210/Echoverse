@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { t } from "@/lib/i18n";
 import { useSettingsStore } from "@/lib/store/settings-store";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Play, RotateCcw, Download, Trash2, Clock, GitBranch } from "lucide-react";
+import { ArrowLeft, Play, RotateCcw, Download, Trash2, Clock, GitBranch, Clapperboard } from "lucide-react";
 
 interface StoryEntry {
   id: string;
@@ -125,7 +125,7 @@ const HistoryPage = () => {
                 </div>
 
                 {story.endingName && (
-                  <p className="text-xs text-muted-foreground">🎬 {story.endingName}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1"><Clapperboard size={12} /> {story.endingName}</p>
                 )}
 
                 <p className="text-xs text-muted-foreground">
