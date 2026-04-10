@@ -112,37 +112,13 @@ const HistoryPage = () => {
                     <h3 className="font-serif font-semibold text-lg group-hover:text-gradient-primary transition-colors">{t(story.titleKey, lang)}</h3>
                     <p className="text-xs text-muted-foreground">{t(story.genreKey, lang)}</p>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span className={`px-2 py-0.5 text-xs rounded-full ${
-                      story.status === "completed"
-                        ? "bg-emerald-500/20 text-emerald-400"
-                        : "bg-accent/20 text-accent"
-                    }`}>
-                      {story.status === "completed" ? t("history.status.completed", lang) : t("history.status.playing", lang)}
-                    </span>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                          <MoreVertical size={14} />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-36">
-                        <DropdownMenuItem onClick={() => navigate(`/play/${story.id}`)}>
-                          {story.status === "playing"
-                            ? <><Play size={14} className="mr-2" /> {t("history.continue", lang)}</>
-                            : <><RotateCcw size={14} className="mr-2" /> {t("history.replay", lang)}</>
-                          }
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Download size={14} className="mr-2" /> {t("history.export", lang)}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleDelete(story.id)} className="text-destructive focus:text-destructive">
-                          <Trash2 size={14} className="mr-2" /> {t("history.delete", lang)}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                  <span className={`px-2 py-0.5 text-xs rounded-full ${
+                    story.status === "completed"
+                      ? "bg-emerald-500/20 text-emerald-400"
+                      : "bg-accent/20 text-accent"
+                  }`}>
+                    {story.status === "completed" ? t("history.status.completed", lang) : t("history.status.playing", lang)}
+                  </span>
                 </div>
 
                 <div className="flex flex-wrap gap-1 mt-3">
@@ -160,9 +136,33 @@ const HistoryPage = () => {
                   <p className="text-xs text-muted-foreground flex items-center gap-1 mt-3"><Clapperboard size={12} /> {t("history.ending", lang)}: {t(story.endingKey, lang)}</p>
                 )}
 
-                <p className="text-xs text-muted-foreground mt-3">
-                  {new Date(story.createdAt).toLocaleDateString()}
-                </p>
+                <div className="flex items-center justify-between mt-auto pt-3">
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(story.createdAt).toLocaleDateString()}
+                  </p>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={(e) => e.stopPropagation()}>
+                        <MoreVertical size={14} />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-36">
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/play/${story.id}`); }}>
+                        {story.status === "playing"
+                          ? <><Play size={14} className="mr-2" /> {t("history.continue", lang)}</>
+                          : <><RotateCcw size={14} className="mr-2" /> {t("history.replay", lang)}</>
+                        }
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                        <Download size={14} className="mr-2" /> {t("history.export", lang)}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDelete(story.id); }} className="text-destructive focus:text-destructive">
+                        <Trash2 size={14} className="mr-2" /> {t("history.delete", lang)}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </motion.div>
             ))}
           </div>
