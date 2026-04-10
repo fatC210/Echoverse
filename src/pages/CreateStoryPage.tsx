@@ -88,10 +88,23 @@ const CreateStoryPage = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
-          <div className="relative w-20 h-20 mx-auto">
-            <div className="absolute inset-0 rounded-full border-2 border-accent/20" />
-            <div className="absolute inset-0 rounded-full border-2 border-accent border-t-transparent animate-spin" />
-            <div className="absolute inset-3 rounded-full border border-accent/30 border-b-transparent animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
+          {/* Audio waveform animation */}
+          <div className="flex items-end justify-center gap-[3px] h-16 mx-auto">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <motion.div
+                key={i}
+                className="w-1 rounded-full bg-accent"
+                animate={{
+                  height: [8, 24 + Math.random() * 32, 12, 32 + Math.random() * 24, 8],
+                }}
+                transition={{
+                  duration: 1.2 + Math.random() * 0.6,
+                  delay: i * 0.08,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+            ))}
           </div>
           <div className="space-y-3">
             {[
