@@ -11,19 +11,9 @@ import { ArrowLeft, Volume2, Mic, Edit3, Square, Send, Volume1, Music, MessageCi
 
 // Sub-components
 
-const AtmosphericBackground = ({ mood }: { mood: MoodType }) => {
-  const config = MOOD_MAP[mood] || MOOD_MAP.mystery;
+const AtmosphericBackground = () => {
   return (
-    <div className="fixed inset-0 transition-all duration-[3000ms]">
-      <div
-        className={`absolute inset-0 ${config.animation}`}
-        style={{
-          background: `linear-gradient(135deg, ${config.colors[0]}, ${config.colors[1]}, ${config.colors[2]})`,
-          animationDuration: config.duration,
-        }}
-      />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/80" />
-    </div>
+    <div className="fixed inset-0 bg-black" />
   );
 };
 
@@ -617,7 +607,7 @@ const PlayerPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <AtmosphericBackground mood={mood} />
+      <AtmosphericBackground />
 
       {/* Top bar */}
       <motion.div
