@@ -250,28 +250,35 @@ const PlayerPage = () => {
   const navigate = useNavigate();
   const { storyId } = useParams();
   const lang = useSettingsStore((s) => s.preferences.interfaceLang);
+  const storyLang = useSettingsStore((s) => s.preferences.storyLang);
 
   const [mood, setMood] = useState<MoodType>("mystery");
   const [narrationText, setNarrationText] = useState(
-    "You slowly open your eyes. The harsh fluorescent light stabs into your pupils. The air tastes stale, recycled too many times. A distant hum of machinery fills the silence — the heartbeat of a station that should have been abandoned years ago."
+    storyLang === "zh"
+      ? "你缓缓睁开双眼。刺眼的荧光灯直射瞳孔。空气尝起来发霉，被循环了太多次。远处机器的低沉嗡鸣填满了寂静——这是一座本该在数年前就被废弃的空间站的心跳声。"
+      : "You slowly open your eyes. The harsh fluorescent light stabs into your pupils. The air tastes stale, recycled too many times. A distant hum of machinery fills the silence — the heartbeat of a station that should have been abandoned years ago."
   );
   const [isTyping, setIsTyping] = useState(true);
   const [showChoices, setShowChoices] = useState(false);
   const [showVolume, setShowVolume] = useState(false);
   const [showEndScreen, setShowEndScreen] = useState(false);
-  const [chapterTitle, setChapterTitle] = useState("Chapter 1: Awakening");
+  const [chapterTitle, setChapterTitle] = useState(storyLang === "zh" ? "第一章：苏醒" : "Chapter 1: Awakening");
   const [volumes, setVolumes] = useState({ master: 1, narration: 1, sfx: 0.7, music: 0.4 });
 
   const audioLayers = [
-    { type: "sfx", name: "Rain", active: true },
-    { type: "music", name: "Ambient", active: true },
+    { type: "sfx", name: storyLang === "zh" ? "雨声" : "Rain", active: true },
+    { type: "music", name: storyLang === "zh" ? "氛围音乐" : "Ambient", active: true },
     { type: "tts", name: t("player.narrating", lang), active: true },
   ];
 
-  const choices: Choice[] = [
-    { id: "a", label: "🅰️", text: "Check the computer terminal", hint: "Maybe the logs can explain what happened..." },
-    { id: "b", label: "🅱️", text: "Follow the sound down the corridor", hint: "Is someone else still alive?" },
-    { id: "c", label: "🅲️", text: "Try to repair the comm bracelet", hint: "I need to let someone know I'm alive" },
+  const choices: Choice[] = storyLang === "zh" ? [
+    { id: "a", label: "A", text: "查看电脑终端", hint: "也许日志能解释发生了什么……" },
+    { id: "b", label: "B", text: "沿着走廊追寻声音", hint: "还有其他人活着吗？" },
+    { id: "c", label: "C", text: "尝试修复通讯手环", hint: "我需要让人知道我还活着" },
+  ] : [
+    { id: "a", label: "A", text: "Check the computer terminal", hint: "Maybe the logs can explain what happened..." },
+    { id: "b", label: "B", text: "Follow the sound down the corridor", hint: "Is someone else still alive?" },
+    { id: "c", label: "C", text: "Try to repair the comm bracelet", hint: "I need to let someone know I'm alive" },
   ];
 
   useEffect(() => {
@@ -287,13 +294,19 @@ const PlayerPage = () => {
     setIsTyping(true);
     setMood("tension");
     setNarrationText(
-      choiceId === "a"
-        ? "You approach the terminal. Its screen flickers to life at your touch, casting a sickly green glow across your face. Lines of text scroll rapidly — system logs, crew manifests, distress signals that were never sent. One entry catches your eye..."
-        : choiceId === "b"
-        ? "Your footsteps echo through the corridor. The sound grows louder — a rhythmic tapping, almost deliberate. As you round the corner, the emergency lights bathe everything in crimson..."
-        : "You turn the bracelet over in your hands. The casing is cracked, its display dark. But beneath the surface, a faint pulse of light — the power cell still holds a charge..."
+      storyLang === "zh"
+        ? (choiceId === "a"
+          ? "你走近终端。屏幕在你触碰下闪烁亮起，投射出一片病态的绿色光芒。一行行文字飞速滚动——系统日志、船员名单、从未发送的求救信号。一条记录引起了你的注意……"
+          : choiceId === "b"
+          ? "你的脚步在走廊中回荡。那个声音越来越响——一种有节奏的敲击声，几乎是刻意的。当你转过拐角，应急灯将一切浸染成深红色……"
+          : "你翻转手环。外壳已经碎裂，显示屏漆黑一片。但在表面之下，有一丝微弱的光脉冲——电池还有一点电量……")
+        : (choiceId === "a"
+          ? "You approach the terminal. Its screen flickers to life at your touch, casting a sickly green glow across your face. Lines of text scroll rapidly — system logs, crew manifests, distress signals that were never sent. One entry catches your eye..."
+          : choiceId === "b"
+          ? "Your footsteps echo through the corridor. The sound grows louder — a rhythmic tapping, almost deliberate. As you round the corner, the emergency lights bathe everything in crimson..."
+          : "You turn the bracelet over in your hands. The casing is cracked, its display dark. But beneath the surface, a faint pulse of light — the power cell still holds a charge...")
     );
-    setChapterTitle("Chapter 1: Discovery");
+    setChapterTitle(storyLang === "zh" ? "第一章：发现" : "Chapter 1: Discovery");
     setTimeout(() => {
       setIsTyping(false);
       setTimeout(() => setShowChoices(true), 1000);
