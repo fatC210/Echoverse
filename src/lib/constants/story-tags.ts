@@ -1,7 +1,7 @@
 export const STORY_TAGS = {
   world: {
     label: { en: "World Setting", zh: "世界设定" },
-    icon: "🌍",
+    icon: "world",
     options: [
       { id: "modern_city", label: { en: "Modern City", zh: "现代都市" } },
       { id: "medieval", label: { en: "Medieval", zh: "中世纪" } },
@@ -21,7 +21,7 @@ export const STORY_TAGS = {
   },
   mood: {
     label: { en: "Emotional Tone", zh: "情绪色彩" },
-    icon: "😱",
+    icon: "mood",
     options: [
       { id: "horror", label: { en: "Horror", zh: "恐怖" } },
       { id: "suspense", label: { en: "Suspense", zh: "悬疑" } },
@@ -37,7 +37,7 @@ export const STORY_TAGS = {
   },
   protagonist: {
     label: { en: "Protagonist", zh: "主角设定" },
-    icon: "👥",
+    icon: "protagonist",
     options: [
       { id: "ordinary_person", label: { en: "Ordinary Person", zh: "普通人" } },
       { id: "detective", label: { en: "Detective", zh: "侦探" } },
