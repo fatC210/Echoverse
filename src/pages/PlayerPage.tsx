@@ -46,8 +46,8 @@ const NarrationDisplay = ({ text, isTyping }: { text: string; isTyping: boolean 
   }, [text, isTyping]);
 
   return (
-    <div className="max-w-2xl mx-auto px-6 max-h-[40vh] overflow-y-auto scrollbar-thin scrollbar-thumb-accent/20 scrollbar-track-transparent">
-      <p className="narration-text text-foreground/90 leading-relaxed">
+    <div className="max-w-2xl mx-auto w-full px-6 h-full overflow-y-auto">
+      <p className="narration-text text-foreground/90 leading-relaxed pb-6">
         {displayedText}
         {isTyping && displayedText.length < text.length && (
           <span className="inline-block w-[2px] h-5 bg-accent ml-1 animate-pulse" />
@@ -409,8 +409,8 @@ const PlayerPage = () => {
       </motion.div>
 
       {/* Main content */}
-      <div className="relative z-20 flex-1 flex flex-col justify-center overflow-hidden">
-        <div className="flex-1 flex items-center py-8">
+      <div className="relative z-20 flex-1 min-h-0 flex flex-col justify-center">
+        <div className="flex-1 min-h-0 py-8">
           <NarrationDisplay text={narrationText} isTyping={isTyping} />
         </div>
       </div>
