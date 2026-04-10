@@ -46,8 +46,8 @@ const NarrationDisplay = ({ text, isTyping }: { text: string; isTyping: boolean 
   }, [text, isTyping]);
 
   return (
-    <div className="max-w-2xl mx-auto px-6 max-h-[40vh] overflow-y-auto scrollbar-thin scrollbar-thumb-accent/20 scrollbar-track-transparent">
-      <p className="narration-text text-foreground/90 leading-relaxed">
+    <div className="max-w-2xl mx-auto w-full px-6 h-full overflow-y-auto">
+      <p className="narration-text text-foreground/90 leading-relaxed pb-6">
         {displayedText}
         {isTyping && displayedText.length < text.length && (
           <span className="inline-block w-[2px] h-5 bg-accent ml-1 animate-pulse" />
