@@ -46,7 +46,7 @@ const NarrationDisplay = ({ text, isTyping }: { text: string; isTyping: boolean 
   }, [text, isTyping]);
 
   return (
-    <div className="max-w-2xl mx-auto w-full px-6 h-full overflow-y-auto">
+    <div className="max-w-2xl mx-auto w-full px-6 pb-6">
       <p className="narration-text text-foreground/90 leading-relaxed pb-6">
         {displayedText}
         {isTyping && displayedText.length < text.length && (
@@ -396,7 +396,7 @@ const PlayerPage = () => {
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <AtmosphericBackground mood={mood} />
 
       {/* Top bar */}
@@ -455,8 +455,8 @@ const PlayerPage = () => {
       </motion.div>
 
       {/* Main content */}
-      <div className="relative z-20 flex-1 min-h-0 flex flex-col justify-center">
-        <div className="flex-1 min-h-0 py-8">
+      <div className="relative z-20 flex-1 flex flex-col justify-start">
+        <div className="py-8">
           <NarrationDisplay text={narrationText} isTyping={isTyping} />
         </div>
       </div>
