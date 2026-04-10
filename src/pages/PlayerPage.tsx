@@ -607,7 +607,7 @@ const PlayerPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <AtmosphericBackground mood={mood} />
+      <AtmosphericBackground />
 
       {/* Top bar */}
       <motion.div
