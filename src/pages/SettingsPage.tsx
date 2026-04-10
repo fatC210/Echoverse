@@ -110,7 +110,7 @@ const SettingsPage = () => {
           <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft size={16} />
           </Button>
-          <h1 className="text-3xl font-bold font-serif text-accent">{t("settings.title", lang)}</h1>
+          <h1 className="text-2xl font-bold font-serif text-accent">{t("settings.title", lang)}</h1>
         </div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">

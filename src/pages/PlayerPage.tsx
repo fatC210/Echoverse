@@ -208,7 +208,7 @@ const StoryEndScreen = ({
     >
       <div className="max-w-lg w-full mx-4 text-center space-y-6">
         <div className="text-5xl mb-2">🎬</div>
-        <h1 className="text-3xl font-bold font-serif text-gradient-primary">
+        <h1 className="text-2xl font-bold font-serif text-gradient-primary">
           「{title}」— {t("end.title", lang)}
         </h1>
         <p className="text-lg text-muted-foreground">
