@@ -160,10 +160,10 @@ const VolumeControl = ({
   const lang = useSettingsStore((s) => s.preferences.interfaceLang);
 
   const sliders = [
-    { key: "master", label: t("player.masterVolume", lang), icon: "🔊" },
-    { key: "narration", label: t("player.narrationVolume", lang), icon: "🗣" },
-    { key: "sfx", label: t("player.sfxVolume", lang), icon: "🔊" },
-    { key: "music", label: t("player.musicVolume", lang), icon: "🎵" },
+    { key: "master", label: t("player.masterVolume", lang), icon: <Volume2 size={14} /> },
+    { key: "narration", label: t("player.narrationVolume", lang), icon: <MessageCircle size={14} /> },
+    { key: "sfx", label: t("player.sfxVolume", lang), icon: <Volume1 size={14} /> },
+    { key: "music", label: t("player.musicVolume", lang), icon: <Music size={14} /> },
   ];
 
   return (
