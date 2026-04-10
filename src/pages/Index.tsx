@@ -3,32 +3,39 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useSettingsStore } from "@/lib/store/settings-store";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 import HomePage from "@/pages/HomePage";
+import EchoverseLogo from "@/components/EchoverseLogo";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Settings, Plus, Clock } from "lucide-react";
 
 const Navigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const lang = useSettingsStore((s) => s.preferences.interfaceLang);
 
-  // Hide nav on player page
   if (location.pathname.startsWith("/play/")) return null;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-40 bg-background/60 backdrop-blur-xl border-b border-border/30">
       <div className="max-w-5xl mx-auto flex items-center justify-between px-4 py-3">
-        <button onClick={() => navigate("/")} className="text-xl font-bold font-serif text-gradient-primary">
-          Echoverse
+        <button onClick={() => navigate("/")} className="flex items-center gap-2.5 group">
+          <EchoverseLogo size={28} />
+          <span className="text-lg font-bold font-serif text-accent">Echoverse</span>
         </button>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/create")}>
-            <Plus size={16} className="mr-1" /> Create
+          <Button variant="ghost" size="sm" onClick={() => navigate("/create")} className="text-muted-foreground hover:text-foreground">
+            <Plus size={16} className="mr-1" /> {t("nav.create", lang)}
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/history")}>
-            <Clock size={16} className="mr-1" /> History
+          <Button variant="ghost" size="sm" onClick={() => navigate("/history")} className="text-muted-foreground hover:text-foreground">
+            <Clock size={16} className="mr-1" /> {t("nav.history", lang)}
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/settings")}>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/settings")} className="text-muted-foreground hover:text-foreground">
             <Settings size={16} />
           </Button>
+          <div className="ml-1 border-l border-border/30 pl-2">
+            <LanguageSwitcher />
+          </div>
         </div>
       </div>
     </nav>

@@ -3,18 +3,30 @@ import { motion } from "framer-motion";
 import { t } from "@/lib/i18n";
 import { useSettingsStore } from "@/lib/store/settings-store";
 import { Button } from "@/components/ui/button";
-import { Headphones, Sparkles, Brain, Music, ArrowRight } from "lucide-react";
+import { Sparkles, Brain, Music, ArrowRight } from "lucide-react";
+import EchoverseLogo from "@/components/EchoverseLogo";
 
-const FloatingParticle = ({ delay, x, size }: { delay: number; x: number; size: number }) => (
-  <div
-    className="absolute rounded-full bg-accent/20 animate-float-up"
-    style={{
-      left: `${x}%`,
-      width: `${size}px`,
-      height: `${size}px`,
-      animationDelay: `${delay}s`,
-      animationDuration: `${12 + Math.random() * 8}s`,
+/* Animated ring that pulses outward */
+const PulseRing = ({ delay, size }: { delay: number; size: number }) => (
+  <motion.div
+    className="absolute top-1/2 left-1/2 rounded-full border border-accent/10"
+    style={{ width: size, height: size, marginLeft: -size / 2, marginTop: -size / 2 }}
+    initial={{ opacity: 0.6, scale: 0.8 }}
+    animate={{ opacity: 0, scale: 1.5 }}
+    transition={{ duration: 6, delay, repeat: Infinity, ease: "easeOut" }}
+  />
+);
+
+const FloatingParticle = ({ delay, x, y, size }: { delay: number; x: number; y: number; size: number }) => (
+  <motion.div
+    className="absolute rounded-full bg-accent"
+    style={{ left: `${x}%`, top: `${y}%`, width: size, height: size }}
+    animate={{
+      y: [0, -30, 0],
+      x: [0, Math.random() > 0.5 ? 15 : -15, 0],
+      opacity: [0, 0.6, 0],
     }}
+    transition={{ duration: 8 + Math.random() * 6, delay, repeat: Infinity, ease: "easeInOut" }}
   />
 );
 
@@ -22,32 +34,52 @@ const HeroSection = () => {
   const lang = useSettingsStore((s) => s.preferences.interfaceLang);
   const navigate = useNavigate();
 
-  const particles = Array.from({ length: 15 }, (_, i) => ({
-    delay: i * 1.5,
+  const particles = Array.from({ length: 30 }, (_, i) => ({
+    delay: i * 0.8,
     x: Math.random() * 100,
-    size: 2 + Math.random() * 3,
+    y: Math.random() * 100,
+    size: 1.5 + Math.random() * 3,
   }));
 
   return (
-    <section className="relative min-h-[85vh] flex flex-col items-center justify-center text-center px-4 overflow-hidden">
-      {/* Background */}
+    <section className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-4 overflow-hidden">
+      {/* Background layers */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-background" />
+
+        {/* Concentric pulse rings */}
+        <PulseRing delay={0} size={300} />
+        <PulseRing delay={1.5} size={500} />
+        <PulseRing delay={3} size={700} />
+        <PulseRing delay={4.5} size={900} />
+
         {/* Central glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px]">
-          <div className="absolute inset-0 rounded-full bg-accent/[0.04] animate-glow-pulse" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px]">
+          <motion.div
+            className="absolute inset-0 rounded-full bg-accent/[0.06]"
+            animate={{ scale: [1, 1.1, 1], opacity: [0.04, 0.08, 0.04] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+            style={{ filter: 'blur(60px)' }}
+          />
         </div>
+
+        {/* Floating particles */}
+        {particles.map((p, i) => <FloatingParticle key={i} {...p} />)}
+
         {/* Grid */}
-        <div className="absolute inset-0 opacity-[0.015]"
+        <div className="absolute inset-0 opacity-[0.02]"
           style={{
             backgroundImage: `linear-gradient(hsl(var(--accent)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--accent)) 1px, transparent 1px)`,
             backgroundSize: '80px 80px',
           }}
         />
-        {/* Particles */}
-        <div className="particle-field">
-          {particles.map((p, i) => <FloatingParticle key={i} {...p} />)}
-        </div>
+
+        {/* Horizontal scan line */}
+        <motion.div
+          className="absolute left-0 right-0 h-[1px] bg-accent/10"
+          animate={{ top: ['0%', '100%'] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+        />
       </div>
 
       <motion.div
@@ -57,12 +89,21 @@ const HeroSection = () => {
         transition={{ duration: 0.8 }}
       >
         <motion.div
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-sm text-accent mb-8"
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.2, duration: 0.6, ease: "backOut" }}
+          className="mb-8"
         >
-          <Headphones size={14} />
+          <EchoverseLogo size={80} className="mx-auto" />
+        </motion.div>
+
+        <motion.div
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-sm text-accent mb-6"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
           <span>{lang === "zh" ? "互动式 AI 音频叙事引擎" : "Interactive AI Audio Narrative Engine"}</span>
         </motion.div>
 
@@ -70,7 +111,8 @@ const HeroSection = () => {
           className="text-6xl md:text-8xl font-bold font-serif mb-6 text-accent"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.5 }}
+          style={{ textShadow: '0 0 60px hsl(var(--accent) / 0.2)' }}
         >
           Echoverse
         </motion.h1>
@@ -79,7 +121,7 @@ const HeroSection = () => {
           className="text-xl md:text-2xl text-muted-foreground font-serif mb-12 leading-relaxed"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.7 }}
         >
           {t("app.tagline", lang)}
         </motion.p>
@@ -87,7 +129,7 @@ const HeroSection = () => {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
+          transition={{ delay: 0.9 }}
         >
           <Button
             onClick={() => navigate("/create")}
@@ -100,10 +142,10 @@ const HeroSection = () => {
         </motion.div>
 
         <motion.p
-          className="mt-10 text-sm text-muted-foreground/60 font-mono"
+          className="mt-10 text-sm text-muted-foreground/50 font-mono tracking-wider"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.9 }}
+          transition={{ delay: 1.1 }}
         >
           {t("home.quickstart", lang)}
         </motion.p>
@@ -122,14 +164,15 @@ const FeatureCards = () => {
   const lang = useSettingsStore((s) => s.preferences.interfaceLang);
 
   return (
-    <section className="py-20 px-4">
+    <section className="py-20 px-4 relative">
       <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
         {features.map((f, i) => (
           <motion.div
             key={f.titleKey}
             initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 + i * 0.15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: i * 0.15 }}
             className="glass-panel-strong p-6 text-center group hover:border-accent/30 transition-all duration-300"
           >
             <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-accent/10 border border-accent/15 flex items-center justify-center text-2xl group-hover:glow-accent transition-all duration-300">
@@ -146,13 +189,11 @@ const FeatureCards = () => {
   );
 };
 
-const HomePage = () => {
-  return (
-    <div className="min-h-screen bg-background">
-      <HeroSection />
-      <FeatureCards />
-    </div>
-  );
-};
+const HomePage = () => (
+  <div className="min-h-screen bg-background">
+    <HeroSection />
+    <FeatureCards />
+  </div>
+);
 
 export default HomePage;

@@ -66,7 +66,7 @@ const ElevenLabsConfigStep = ({ onNext, onBack, lang }: ElevenLabsConfigStepProp
   const canProceed = testStatus === "success" && hasVoice;
 
   return (
-    <div className="glass-panel-strong p-8 space-y-5 scanline max-h-[85vh] overflow-y-auto">
+    <div className="glass-panel-strong p-8 space-y-5 scanline">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center">
           <Music size={20} className="text-accent" />
@@ -131,37 +131,40 @@ const ElevenLabsConfigStep = ({ onNext, onBack, lang }: ElevenLabsConfigStepProp
             <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase mb-3 block">
               {t("onboarding.elevenlabs.selectVoice", lang)}
             </label>
-            <div className="space-y-1.5 max-h-52 overflow-y-auto rounded-xl border border-border/30 bg-secondary/20 p-2">
+            {/* Grid layout for voices - no scrollbar */}
+            <div className="grid grid-cols-2 gap-2">
               {ELEVENLABS_VOICES.map((v, i) => (
                 <motion.button
                   key={v.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.04 }}
                   onClick={() => selectVoice(v)}
-                  className={`w-full flex items-center justify-between p-3 rounded-lg text-sm transition-all ${
+                  className={`relative flex flex-col items-center p-3 rounded-xl text-sm transition-all ${
                     voice.voiceId === v.id
                       ? "bg-accent/15 border border-accent/40 glow-accent"
-                      : "hover:bg-muted/50 border border-transparent"
+                      : "hover:bg-muted/50 border border-border/30"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-2.5 h-2.5 rounded-full transition-all ${
-                      voice.voiceId === v.id ? "bg-accent status-dot" : "bg-muted-foreground/30"
-                    }`} />
-                    <span className="font-medium">{v.name}</span>
-                    <span className="text-muted-foreground text-xs">
-                      {v.gender === "female" ? "♀" : "♂"} · {v.description[lang]}
-                    </span>
+                  {/* Gender indicator */}
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs mb-1.5 ${
+                    voice.voiceId === v.id ? "bg-accent/20 text-accent" : "bg-muted text-muted-foreground"
+                  }`}>
+                    {v.gender === "female" ? "♀" : "♂"}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  <span className="font-medium text-xs">{v.name}</span>
+                  <span className="text-[10px] text-muted-foreground mt-0.5">{v.description[lang]}</span>
+                  {/* Preview button */}
+                  <button
                     onClick={(e) => { e.stopPropagation(); previewVoice(v.id); }}
-                    className="h-7 px-2 text-muted-foreground hover:text-accent"
+                    className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-muted/50 hover:bg-accent/20 flex items-center justify-center text-muted-foreground hover:text-accent transition-colors"
                   >
-                    {playingVoice === v.id ? <Square size={12} /> : <Play size={12} />}
-                  </Button>
+                    {playingVoice === v.id ? <Square size={8} /> : <Play size={8} />}
+                  </button>
+                  {/* Selected indicator */}
+                  {voice.voiceId === v.id && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-accent status-dot" />
+                  )}
                 </motion.button>
               ))}
             </div>

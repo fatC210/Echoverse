@@ -163,28 +163,36 @@ const SettingsPage = () => {
             <KeyInput label={t("onboarding.turbopuffer.apiKey", lang)} value={settings.turbopuffer.apiKey} onChange={(v) => settings.updateTurbopuffer({ apiKey: v })} id="tp" />
           </section>
 
-          {/* Voice */}
+          {/* Voice - Grid layout */}
           <section className="glass-panel-strong p-6 space-y-4">
             <h2 className="text-lg font-semibold font-serif">{t("settings.voiceSettings", lang)}</h2>
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/30 border border-border/30">
-              <span className="text-accent">🗣</span>
-              <span className="flex-1 text-sm">{settings.voice.voiceName || "Not selected"} — {settings.voice.voiceDescription}</span>
-            </div>
-            <div className="space-y-1.5 max-h-48 overflow-y-auto">
+            <div className="grid grid-cols-4 gap-2">
               {ELEVENLABS_VOICES.map((v) => (
                 <button
                   key={v.id}
                   onClick={() => settings.updateVoice({ voiceId: v.id, voiceName: v.name, voiceDescription: `${v.gender === "female" ? "♀" : "♂"} ${v.description[lang]}` })}
-                  className={`w-full flex items-center justify-between p-2.5 rounded-lg text-sm transition-all ${settings.voice.voiceId === v.id ? "bg-accent/15 border border-accent/40 glow-accent" : "hover:bg-muted/50 border border-transparent"}`}
+                  className={`relative flex flex-col items-center p-3 rounded-xl text-sm transition-all ${
+                    settings.voice.voiceId === v.id
+                      ? "bg-accent/15 border border-accent/40 glow-accent"
+                      : "hover:bg-muted/50 border border-border/30"
+                  }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-2.5 h-2.5 rounded-full ${settings.voice.voiceId === v.id ? "bg-accent status-dot" : "bg-muted-foreground/30"}`} />
-                    <span>{v.name}</span>
-                    <span className="text-muted-foreground text-xs">{v.description[lang]}</span>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs mb-1.5 ${
+                    settings.voice.voiceId === v.id ? "bg-accent/20 text-accent" : "bg-muted text-muted-foreground"
+                  }`}>
+                    {v.gender === "female" ? "♀" : "♂"}
                   </div>
-                  <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); previewVoice(v.id); }} className="h-7 px-2 text-muted-foreground hover:text-accent">
-                    {playingVoice === v.id ? <Square size={12} /> : <Play size={12} />}
-                  </Button>
+                  <span className="font-medium text-xs">{v.name}</span>
+                  <span className="text-[10px] text-muted-foreground mt-0.5 text-center leading-tight">{v.description[lang]}</span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); previewVoice(v.id); }}
+                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-muted/50 hover:bg-accent/20 flex items-center justify-center text-muted-foreground hover:text-accent transition-colors"
+                  >
+                    {playingVoice === v.id ? <Square size={8} /> : <Play size={8} />}
+                  </button>
+                  {settings.voice.voiceId === v.id && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-accent status-dot" />
+                  )}
                 </button>
               ))}
             </div>
