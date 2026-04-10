@@ -79,7 +79,7 @@ const HistoryPage = () => {
           <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
             <ArrowLeft size={16} />
           </Button>
-          <h1 className="text-3xl font-bold font-serif">{t("history.title", lang)}</h1>
+          <h1 className="text-2xl font-bold font-serif">{t("history.title", lang)}</h1>
         </div>
 
         {stories.length === 0 ? (

@@ -125,7 +125,7 @@ const CreateStoryPage = () => {
           <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft size={16} />
           </Button>
-          <h1 className="text-3xl font-bold font-serif text-accent">{t("create.title", lang)}</h1>
+          <h1 className="text-2xl font-bold font-serif text-accent">{t("create.title", lang)}</h1>
         </div>
 
         <motion.div
