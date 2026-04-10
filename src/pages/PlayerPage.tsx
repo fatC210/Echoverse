@@ -296,7 +296,7 @@ const PlayerPage = () => {
     {
       narration: "实验室的门在你面前缓缓滑开。一阵冰冷的空气扑面而来，带着甲醛和某种你无法辨识的甜腻气味。破碎的培养皿散落一地，墙壁上布满了某种深色的藤蔓状物质。它们似乎在……呼吸。",
       chapter: "第三章：真相",
-      mood: "dark" as MoodType,
+      mood: "horror" as MoodType,
       choices: [
         { id: "a", label: "A", text: "采集藤蔓样本", hint: "了解你的敌人" },
         { id: "b", label: "B", text: "立即撤退并封锁实验室", hint: "有些东西不该被打扰" },
@@ -327,7 +327,7 @@ const PlayerPage = () => {
     {
       narration: "The laboratory door slides open slowly. A wave of cold air hits you, carrying the scent of formaldehyde and something sweet you can't identify. Shattered specimen jars litter the floor, and the walls are covered in dark, vine-like growths. They seem to be... breathing.",
       chapter: "Chapter 3: The Truth",
-      mood: "dark" as MoodType,
+      mood: "horror" as MoodType,
       choices: [
         { id: "a", label: "A", text: "Collect a vine sample", hint: "Know your enemy" },
         { id: "b", label: "B", text: "Retreat and seal the lab", hint: "Some things should stay undisturbed" },
