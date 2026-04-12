@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { useSettingsStore } from "@/lib/store/settings-store";
+import { getLocalizedVoiceName } from "@/lib/utils/voices";
 import { CheckCircle2, Headphones, Brain, Music, Zap, Mic } from "lucide-react";
 
 interface CompletionStepProps {
@@ -21,7 +22,7 @@ const CompletionStep = ({ onComplete, lang }: CompletionStepProps) => {
     { icon: <Brain size={16} />, label: lang === "zh" ? "LLM 服务" : "LLM Service", status: true },
     { icon: <Music size={16} />, label: "ElevenLabs", status: true },
     { icon: <Zap size={16} />, label: "turbopuffer", status: true },
-    { icon: <Mic size={16} />, label: `${lang === "zh" ? "旁白声音" : "Voice"}: ${voice.voiceName || "—"}`, status: !!voice.voiceId },
+    { icon: <Mic size={16} />, label: `${lang === "zh" ? "旁白声音" : "Voice"}: ${getLocalizedVoiceName(voice.voiceId, voice.voiceName, lang)}`, status: !!voice.voiceId },
   ];
 
   return (

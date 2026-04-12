@@ -8,7 +8,9 @@ export function t(key: string, lang: "en" | "zh" = "en"): string {
 }
 
 export function useI18n() {
-  const settings = localStorage.getItem("echoverse_settings");
+  const settings = typeof window === "undefined"
+    ? null
+    : localStorage.getItem("echoverse_settings");
   const lang = settings
     ? (JSON.parse(settings).preferences?.interfaceLang ?? "en")
     : "en";

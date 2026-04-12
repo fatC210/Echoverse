@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSettingsStore } from "@/lib/store/settings-store";
+import { testLlmConnection } from "@/lib/services/llm";
+import { isLlmVerified, serializeLlmVerification } from "@/lib/utils/settings-validation";
 import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Brain, ArrowLeft, ArrowRight } from "lucide-react";
 
 interface LlmConfigStepProps {
@@ -15,27 +17,65 @@ interface LlmConfigStepProps {
 const LlmConfigStep = ({ onNext, onBack, lang }: LlmConfigStepProps) => {
   const { llm, updateLlm } = useSettingsStore();
   const [showKey, setShowKey] = useState(false);
-  const [testStatus, setTestStatus] = useState<"idle" | "testing" | "success" | "error">("idle");
+  const llmVerified = isLlmVerified(llm);
+  const [testStatus, setTestStatus] = useState<"idle" | "testing" | "success" | "error">(
+    llmVerified ? "success" : "idle",
+  );
 
   const testConnection = async () => {
     setTestStatus("testing");
     try {
-      const res = await fetch(`${llm.baseUrl}/models`, {
-        headers: { Authorization: `Bearer ${llm.apiKey}` },
-      });
-      setTestStatus(res.ok ? "success" : "error");
+      await testLlmConnection(llm);
+      updateLlm({ verifiedConfigSignature: serializeLlmVerification(llm) });
+      setTestStatus("success");
     } catch {
       setTestStatus("error");
     }
   };
 
-  const canProceed = testStatus === "success";
+  useEffect(() => {
+    if (llmVerified) {
+      setTestStatus("success");
+      return;
+    }
+
+    if (!llm.apiKey.trim()) {
+      setTestStatus("idle");
+    }
+  }, [llmVerified, llm.apiKey]);
+
+  const canProceed = llmVerified || testStatus === "success";
 
   const fields = [
-    { key: "baseUrl", label: t("onboarding.llm.baseUrl", lang), value: llm.baseUrl, hint: t("onboarding.llm.baseUrlHint", lang), type: "text" },
-    { key: "apiKey", label: t("onboarding.llm.apiKey", lang), value: llm.apiKey, type: "password" },
-    { key: "model", label: t("onboarding.llm.model", lang), value: llm.model, type: "text" },
-    { key: "embeddingModel", label: t("onboarding.llm.embeddingModel", lang), value: llm.embeddingModel, type: "text" },
+    {
+      key: "baseUrl",
+      label: t("onboarding.llm.baseUrl", lang),
+      value: llm.baseUrl,
+      hint: t("onboarding.llm.baseUrlHint", lang),
+      type: "text",
+      placeholder: t("onboarding.placeholder.baseUrl", lang),
+    },
+    {
+      key: "apiKey",
+      label: t("onboarding.llm.apiKey", lang),
+      value: llm.apiKey,
+      type: "password",
+      placeholder: t("onboarding.placeholder.apiKey", lang),
+    },
+    {
+      key: "model",
+      label: t("onboarding.llm.model", lang),
+      value: llm.model,
+      type: "text",
+      placeholder: t("onboarding.placeholder.model", lang),
+    },
+    {
+      key: "embeddingModel",
+      label: t("onboarding.llm.embeddingModel", lang),
+      value: llm.embeddingModel,
+      type: "text",
+      placeholder: t("onboarding.placeholder.embeddingModel", lang),
+    },
   ];
 
   return (
@@ -62,15 +102,17 @@ const LlmConfigStep = ({ onNext, onBack, lang }: LlmConfigStepProps) => {
             <div className="relative">
               <Input
                 type={field.key === "apiKey" ? (showKey ? "text" : "password") : "text"}
+                placeholder={field.placeholder}
                 value={field.value}
                 onChange={(e) => { updateLlm({ [field.key]: e.target.value }); setTestStatus("idle"); }}
-                className="input-game"
+                className={field.key === "apiKey" ? "input-game pr-10" : "input-game"}
               />
               {field.key === "apiKey" && (
                 <button
                   type="button"
                   onClick={() => setShowKey(!showKey)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-accent transition-colors"
+                  onMouseDown={(event) => event.preventDefault()}
+                  className="hover-icon-accent absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground"
                 >
                   {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>

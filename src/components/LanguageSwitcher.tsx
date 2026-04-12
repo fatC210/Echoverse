@@ -8,7 +8,7 @@ const LanguageSwitcher = () => {
   return (
     <button
       onClick={() => updatePreferences({ interfaceLang: next })}
-      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-accent border border-transparent hover:border-accent/20 transition-all"
+      className="hover-surface flex items-center gap-1.5 rounded-lg border border-transparent px-2.5 py-1.5 text-xs text-muted-foreground"
       title={next === "zh" ? "切换到中文" : "Switch to English"}
     >
       <Globe size={14} />

@@ -1,16 +1,23 @@
+export const DEFAULT_LLM_BASE_URL = "https://api.openai.com/v1";
+export const DEFAULT_LLM_MODEL = "gpt-4o";
+export const DEFAULT_LLM_EMBEDDING_MODEL = "text-embedding-3-small";
+
 export const DEFAULT_SETTINGS = {
   llm: {
-    baseUrl: "https://api.openai.com/v1",
+    baseUrl: "",
     apiKey: "",
-    model: "gpt-4o",
-    embeddingModel: "text-embedding-3-small",
+    model: "",
+    embeddingModel: DEFAULT_LLM_EMBEDDING_MODEL,
+    verifiedConfigSignature: "",
   },
   elevenlabs: {
     apiKey: "",
+    verifiedApiKey: "",
   },
   turbopuffer: {
     apiKey: "",
     baseUrl: "https://api.turbopuffer.com",
+    verifiedConfigSignature: "",
   },
   voice: {
     voiceId: "",
@@ -20,7 +27,6 @@ export const DEFAULT_SETTINGS = {
   preferences: {
     interfaceLang: "en" as "en" | "zh",
     storyLang: "en" as "en" | "zh",
-    audioQuality: "standard" as "standard" | "high",
   },
   customTags: [] as string[],
   onboardingCompleted: false,
@@ -28,15 +34,27 @@ export const DEFAULT_SETTINGS = {
 
 export type EchoSettings = typeof DEFAULT_SETTINGS;
 
+export function resolveLlmSettings(
+  llm: EchoSettings["llm"],
+): EchoSettings["llm"] {
+  return {
+    ...llm,
+    baseUrl: llm.baseUrl.trim() || DEFAULT_LLM_BASE_URL,
+    model: llm.model.trim() || DEFAULT_LLM_MODEL,
+    embeddingModel:
+      llm.embeddingModel.trim() || DEFAULT_LLM_EMBEDDING_MODEL,
+  };
+}
+
 export const ELEVENLABS_VOICES = [
-  { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah", gender: "female", description: { en: "Young, energetic", zh: "年轻、活力" } },
-  { id: "XrExE9yKIg1WjnnlVkGX", name: "Matilda", gender: "female", description: { en: "Soft, friendly", zh: "柔和、友好" } },
-  { id: "CwhRBWXzGAHq8TQ4Fs17", name: "Roger", gender: "male", description: { en: "Calm, confident", zh: "沉稳、自信" } },
-  { id: "IKne3meq5aSn9XLyUdCD", name: "Charlie", gender: "male", description: { en: "Casual, natural", zh: "随性、自然" } },
-  { id: "JBFqnCBsd6RMkjVDRZzb", name: "George", gender: "male", description: { en: "Deep, authoritative", zh: "低沉、权威" } },
-  { id: "pFZP5JQG7iQjIQuC4Bku", name: "Lily", gender: "female", description: { en: "Warm, expressive", zh: "温暖、富有表现力" } },
-  { id: "onwK4e9ZLuTAKqWW03F9", name: "Daniel", gender: "male", description: { en: "Clear, articulate", zh: "清晰、有条理" } },
-  { id: "nPczCjzI2devNBz1zQrb", name: "Brian", gender: "male", description: { en: "Warm, narrative", zh: "温暖、叙事感" } },
+  { id: "EXAVITQu4vr4xnSDxMaL", name: { en: "Sarah", zh: "莎拉" }, gender: "female", description: { en: "Young, energetic", zh: "年轻、活力" } },
+  { id: "XrExE9yKIg1WjnnlVkGX", name: { en: "Matilda", zh: "玛蒂尔达" }, gender: "female", description: { en: "Soft, friendly", zh: "柔和、友好" } },
+  { id: "CwhRBWXzGAHq8TQ4Fs17", name: { en: "Roger", zh: "罗杰" }, gender: "male", description: { en: "Calm, confident", zh: "沉稳、自信" } },
+  { id: "IKne3meq5aSn9XLyUdCD", name: { en: "Charlie", zh: "查理" }, gender: "male", description: { en: "Casual, natural", zh: "随性、自然" } },
+  { id: "JBFqnCBsd6RMkjVDRZzb", name: { en: "George", zh: "乔治" }, gender: "male", description: { en: "Deep, authoritative", zh: "低沉、权威" } },
+  { id: "pFZP5JQG7iQjIQuC4Bku", name: { en: "Lily", zh: "莉莉" }, gender: "female", description: { en: "Warm, expressive", zh: "温暖、富有表现力" } },
+  { id: "onwK4e9ZLuTAKqWW03F9", name: { en: "Daniel", zh: "丹尼尔" }, gender: "male", description: { en: "Clear, articulate", zh: "清晰、有条理" } },
+  { id: "nPczCjzI2devNBz1zQrb", name: { en: "Brian", zh: "布莱恩" }, gender: "male", description: { en: "Warm, narrative", zh: "温暖、叙事感" } },
 ];
 
 export const DURATION_OPTIONS = [

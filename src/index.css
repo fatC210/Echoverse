@@ -146,6 +146,48 @@
     mask-composite: exclude;
   }
 
+  .hover-surface {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .hover-surface:hover {
+    background: hsl(var(--accent) / 0.08);
+    border-color: hsl(var(--accent) / 0.3);
+    color: hsl(var(--foreground));
+    box-shadow: 0 0 0 1px hsl(var(--accent) / 0.08), 0 10px 28px hsl(var(--background) / 0.18);
+  }
+
+  .hover-card {
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .hover-card:hover {
+    background: hsl(var(--card) / 0.78);
+    border-color: hsl(var(--accent) / 0.28);
+    box-shadow: 0 16px 36px hsl(var(--background) / 0.26);
+    transform: translateY(-1px);
+  }
+
+  .hover-icon-accent {
+    transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .hover-icon-accent:hover {
+    background: hsl(var(--accent) / 0.1);
+    color: hsl(var(--accent));
+    box-shadow: 0 0 0 1px hsl(var(--accent) / 0.14);
+  }
+
+  .hover-icon-danger {
+    transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .hover-icon-danger:hover {
+    background: hsl(var(--destructive) / 0.12);
+    color: hsl(var(--destructive));
+    box-shadow: 0 0 0 1px hsl(var(--destructive) / 0.14);
+  }
+
   /* Floating particle dots */
   .particle-field {
     position: absolute;
@@ -162,6 +204,12 @@
   .input-game:focus {
     border-color: hsl(var(--accent) / 0.5);
     box-shadow: 0 0 12px hsl(var(--accent) / 0.1), inset 0 0 12px hsl(var(--accent) / 0.03);
+  }
+
+  /* Hide native password reveal controls so only the custom eye button is shown. */
+  input[type='password']::-ms-reveal,
+  input[type='password']::-ms-clear {
+    display: none;
   }
 
   /* Scan line effect for onboarding */
