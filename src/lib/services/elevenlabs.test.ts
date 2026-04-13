@@ -103,12 +103,14 @@ describe("audio generation requests", () => {
         method: "POST",
       }),
     );
-    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
-      text: "soft rain on metal",
-      duration_seconds: 6,
-      prompt_influence: 0.3,
-      loop: true,
-    });
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+
+    expect(body.duration_seconds).toBe(6);
+    expect(body.prompt_influence).toBe(0.3);
+    expect(body.loop).toBe(true);
+    expect(body.text).toContain("soft rain on metal");
+    expect(body.text).toContain("Non-verbal ambient sound effect only");
+    expect(body.text).toContain("No speech");
   });
 
   it("calls the current ElevenLabs music endpoint with output format as a query parameter", async () => {
@@ -129,10 +131,12 @@ describe("audio generation requests", () => {
         method: "POST",
       }),
     );
-    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
-      prompt: "slow ambient pulse",
-      music_length_ms: 20000,
-      force_instrumental: true,
-    });
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+
+    expect(body.music_length_ms).toBe(20000);
+    expect(body.force_instrumental).toBe(true);
+    expect(body.prompt).toContain("slow ambient pulse");
+    expect(body.prompt).toContain("Instrumental background music only");
+    expect(body.prompt).toContain("No vocals");
   });
 });

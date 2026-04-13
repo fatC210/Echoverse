@@ -4,9 +4,14 @@ import {
 } from "@/lib/constants/defaults";
 import {
   bumpAudioAssetUsage,
+  getAudioAsset,
   listAudioAssetsByStoryAndCategory,
   putAudioAsset,
 } from "@/lib/db";
+import {
+  findRemoteAudioAssetMatch,
+  syncAudioAssetMemory,
+} from "@/lib/engine/turbopuffer-memory";
 import {
   generateMusicTrack,
   generateNarrationSpeech,
@@ -19,14 +24,24 @@ import {
   cosineSimilarity,
   createId,
 } from "@/lib/utils/echoverse";
+import { planNarrationCues } from "@/lib/utils/narration-voices";
 
 const CACHE_THRESHOLDS = {
   sfx: 0.9,
   music: 0.88,
 } as const;
+const NONVERBAL_AUDIO_GENERATION_VERSION = "nonverbal_v1";
 
 const disabledEmbeddingConfigs = new Set<string>();
 const warnedEmbeddingConfigs = new Set<string>();
+
+function runInBackground(task: Promise<unknown>, label: string) {
+  void Promise.resolve(task).catch((error) => {
+    console.warn(`${label} failed in background.`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  });
+}
 
 function getEmbeddingConfigKey(settings: EchoSettings) {
   const resolved = resolveLlmSettings(settings.llm);
@@ -78,7 +93,9 @@ async function findCachedAsset(
   category: "sfx" | "music",
   description: string,
 ) {
-  const existingAssets = await listAudioAssetsByStoryAndCategory(storyId, category);
+  const existingAssets = (await listAudioAssetsByStoryAndCategory(storyId, category)).filter(
+    (asset) => asset.generationVersion === NONVERBAL_AUDIO_GENERATION_VERSION,
+  );
   const exactMatch = existingAssets.find((asset) => asset.description === description);
 
   if (exactMatch) {
@@ -100,6 +117,33 @@ async function findCachedAsset(
       asset: null,
       cacheHit: false,
     };
+  }
+
+  const remoteMatch = await findRemoteAudioAssetMatch(
+    settings,
+    storyId,
+    category,
+    queryEmbedding,
+    threshold,
+  );
+
+  if (remoteMatch?.assetId) {
+    const remoteAsset = await getAudioAsset(remoteMatch.assetId);
+
+    if (
+      remoteAsset?.category === category &&
+      remoteAsset.generationVersion === NONVERBAL_AUDIO_GENERATION_VERSION
+    ) {
+      await bumpAudioAssetUsage(remoteAsset.id);
+      return {
+        asset: {
+          ...remoteAsset,
+          timesUsed: remoteAsset.timesUsed + 1,
+        },
+        cacheHit: true,
+        embedding: queryEmbedding,
+      };
+    }
   }
 
   let bestMatch: AudioAsset | null = null;
@@ -176,6 +220,8 @@ async function createGeneratedAsset(
     storyId,
     category,
     description,
+    generationVersion:
+      category === "tts" ? undefined : NONVERBAL_AUDIO_GENERATION_VERSION,
     audioBlob: generated.blob,
     durationSec,
     looping: Boolean(options.looping),
@@ -187,6 +233,11 @@ async function createGeneratedAsset(
   } satisfies AudioAsset;
 
   await putAudioAsset(asset);
+
+  if (category !== "tts") {
+    runInBackground(syncAudioAssetMemory(settings, asset), "Audio memory sync");
+  }
+
   return asset;
 }
 
@@ -202,29 +253,53 @@ export async function resolveSegmentAudio(
   let cacheHitCount = 0;
   let cacheMissCount = 0;
 
-  try {
-    const narrationAsset = await createGeneratedAsset(
-      settings,
-      story.id,
-      "tts",
-      segment.audioScript.narration.text,
-      {
-        mood: segment.audioScript.mood_color,
-        voiceId: settings.voice.voiceId,
-      },
-    );
-    nextSegment.audioStatus.tts = "ready";
-    resolvedAudio.narrationAssetId = narrationAsset.id;
-  } catch (error) {
-    nextSegment.audioStatus.tts = "failed";
-    console.warn("Narration audio generation failed; continuing with text-only narration.", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
+  const narrationPromise = (async () => {
+    try {
+      const narrationPlan = planNarrationCues({
+        text: segment.audioScript.narration.text,
+        narratorVoiceId: settings.voice.voiceId,
+        protagonistName: story.worldState.protagonist.name,
+        characters: story.worldState.characters,
+        scriptedCues: segment.audioScript.narration.voice_cues,
+      });
+      const narrationCues = [] as NonNullable<Segment["resolvedAudio"]>["narrationCues"];
 
-  for (let index = 0; index < segment.audioScript.sfx_layers.length; index += 1) {
-    const layer = segment.audioScript.sfx_layers[index];
+      for (const cue of narrationPlan) {
+        const narrationAsset = await createGeneratedAsset(
+          settings,
+          story.id,
+          "tts",
+          cue.text,
+          {
+            mood: segment.audioScript.mood_color,
+            voiceId: cue.voiceId,
+          },
+        );
 
+        narrationCues.push({
+          ...cue,
+          assetId: narrationAsset.id,
+        });
+      }
+
+      return {
+        status: "ready" as const,
+        assetId:
+          narrationCues.length === 1 ? narrationCues[0]?.assetId : undefined,
+        cues: narrationCues,
+      };
+    } catch (error) {
+      console.warn("Narration audio generation failed; continuing with text-only narration.", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      return {
+        status: "failed" as const,
+      };
+    }
+  })();
+
+  const sfxPromises = segment.audioScript.sfx_layers.map(async (layer, index) => {
     try {
       const cache = await findCachedAsset(settings, story.id, "sfx", layer.description);
       const asset =
@@ -242,16 +317,32 @@ export async function resolveSegmentAudio(
           cache.embedding,
         ));
 
-      cacheHitCount += cache.cacheHit ? 1 : 0;
-      cacheMissCount += cache.cacheHit ? 0 : 1;
-      nextSegment.audioStatus.sfx[index] = "ready";
-      resolvedAudio.sfxAssetIds.push(asset.id);
+      return {
+        index,
+        status: "ready" as const,
+        assetId: asset.id,
+        cacheHit: cache.cacheHit ? 1 : 0,
+        cacheMiss: cache.cacheHit ? 0 : 1,
+      };
     } catch {
-      nextSegment.audioStatus.sfx[index] = "failed";
+      return {
+        index,
+        status: "failed" as const,
+        cacheHit: 0,
+        cacheMiss: 0,
+      };
     }
-  }
+  });
 
-  if (segment.audioScript.music?.description) {
+  const musicPromise = (async () => {
+    if (!segment.audioScript.music?.description) {
+      return {
+        status: nextSegment.audioStatus.music,
+        cacheHit: 0,
+        cacheMiss: 0,
+      };
+    }
+
     try {
       const cache = await findCachedAsset(
         settings,
@@ -274,13 +365,53 @@ export async function resolveSegmentAudio(
           cache.embedding,
         ));
 
-      cacheHitCount += cache.cacheHit ? 1 : 0;
-      cacheMissCount += cache.cacheHit ? 0 : 1;
-      nextSegment.audioStatus.music = "ready";
-      resolvedAudio.musicAssetId = asset.id;
+      return {
+        status: "ready" as const,
+        assetId: asset.id,
+        cacheHit: cache.cacheHit ? 1 : 0,
+        cacheMiss: cache.cacheHit ? 0 : 1,
+      };
     } catch {
-      nextSegment.audioStatus.music = "failed";
+      return {
+        status: "failed" as const,
+        cacheHit: 0,
+        cacheMiss: 0,
+      };
     }
+  })();
+
+  const [narrationResult, sfxResults, musicResult] = await Promise.all([
+    narrationPromise,
+    Promise.all(sfxPromises),
+    musicPromise,
+  ]);
+
+  nextSegment.audioStatus.tts = narrationResult.status;
+  if (narrationResult.status === "ready") {
+    if (narrationResult.assetId) {
+      resolvedAudio.narrationAssetId = narrationResult.assetId;
+    }
+
+    if (narrationResult.cues?.length) {
+      resolvedAudio.narrationCues = narrationResult.cues;
+    }
+  }
+
+  for (const result of sfxResults) {
+    nextSegment.audioStatus.sfx[result.index] = result.status;
+    cacheHitCount += result.cacheHit;
+    cacheMissCount += result.cacheMiss;
+
+    if (result.status === "ready") {
+      resolvedAudio.sfxAssetIds[result.index] = result.assetId;
+    }
+  }
+
+  nextSegment.audioStatus.music = musicResult.status;
+  cacheHitCount += musicResult.cacheHit;
+  cacheMissCount += musicResult.cacheMiss;
+  if (musicResult.status === "ready") {
+    resolvedAudio.musicAssetId = musicResult.assetId;
   }
 
   nextSegment.resolvedAudio = resolvedAudio;

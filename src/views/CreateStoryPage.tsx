@@ -10,7 +10,7 @@ import { DURATION_OPTIONS } from "@/lib/constants/defaults";
 import { listCustomTags } from "@/lib/db";
 import { advanceStory, createStoryExperience } from "@/lib/engine/story-runtime";
 import { generateStructuredJson, LlmRequestError } from "@/lib/services/llm";
-import { isMeaningfulPremise, normalizeGeneratedPremise } from "@/lib/utils/premise";
+import { extractGeneratedPremise, isMeaningfulPremise } from "@/lib/utils/premise";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, X, Loader2, ChevronDown, ChevronUp, Wand2, Globe, Heart, Users, PenLine, Settings } from "lucide-react";
@@ -27,7 +27,17 @@ function hasSameItems(left: string[], right: string[]) {
 }
 
 interface PremiseSuggestion {
-  premise?: string;
+  premise?: unknown;
+  storyPremise?: unknown;
+  story_premise?: unknown;
+  text?: unknown;
+  content?: unknown;
+  response?: unknown;
+  output?: unknown;
+  result?: unknown;
+  data?: unknown;
+  message?: unknown;
+  answer?: unknown;
 }
 
 function isLikelyLlmConfigurationError(error: unknown) {
@@ -259,7 +269,7 @@ Return only a JSON object, for example:
           },
         );
 
-        const nextPremise = normalizeGeneratedPremise(result.premise ?? "");
+        const nextPremise = extractGeneratedPremise(result);
 
         if (isMeaningfulPremise(nextPremise)) {
           setPremise(nextPremise);

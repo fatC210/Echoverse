@@ -21,6 +21,12 @@ import {
   createEmptyPlayerProfile,
   updatePlayerProfile,
 } from "@/lib/engine/player-profile";
+import {
+  retrieveStoryContext,
+  syncDecisionMemory,
+  syncPlayerProfileMemory,
+  syncStoryWorldMemory,
+} from "@/lib/engine/turbopuffer-memory";
 import { createStoryRecord, generateWorldState } from "@/lib/engine/world-generator";
 import type {
   AudioAsset,
@@ -28,6 +34,47 @@ import type {
   Story,
   WorldGenerationInput,
 } from "@/lib/types/echoverse";
+import { getNarrationDurationSec } from "@/lib/utils/narration";
+
+function runInBackground(task: Promise<unknown>, label: string) {
+  void Promise.resolve(task).catch((error) => {
+    console.warn(`${label} failed in background.`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  });
+}
+
+function resolveGenerationMode(
+  story: Story,
+  options?: {
+    selectedAction?: {
+      choiceId: string;
+      choiceText: string;
+      riskLevel: "low" | "medium" | "high";
+      isFreeText: boolean;
+      timeToDecideMs: number;
+    } | null;
+    mode?: "normal" | "end_story" | "continue_after_ending";
+  },
+) {
+  const requestedMode = options?.mode ?? "normal";
+
+  if (requestedMode !== "normal" || story.continuedAfterEnding || !options?.selectedAction) {
+    return requestedMode;
+  }
+
+  const chapterTarget = story.worldState.chapters?.length ?? 0;
+  const configuredTarget = story.worldState.story_rules.total_target_choices;
+  const targetChoices =
+    typeof configuredTarget === "number" && configuredTarget > 0
+      ? configuredTarget
+      : chapterTarget;
+  const projectedDecisionCount = story.totalDecisions + 1;
+
+  return targetChoices > 0 && projectedDecisionCount >= targetChoices
+    ? "end_story"
+    : requestedMode;
+}
 
 export async function createStoryExperience(
   settings: EchoSettings,
@@ -35,13 +82,17 @@ export async function createStoryExperience(
 ) {
   const worldState = await generateWorldState(settings, input);
   const story = createStoryRecord(input, worldState);
+  const initialProfile = createEmptyPlayerProfile(story.id);
 
   await putStory(story);
-  await putPlayerProfile(createEmptyPlayerProfile(story.id));
+  await putPlayerProfile(initialProfile);
+  await Promise.all(input.selectedCustomTags.map((tag) => upsertCustomTag(tag)));
 
-  for (const tag of input.selectedCustomTags) {
-    await upsertCustomTag(tag);
-  }
+  runInBackground(syncStoryWorldMemory(settings, story), "Story world sync");
+  runInBackground(
+    syncPlayerProfileMemory(settings, story, initialProfile),
+    "Player profile sync",
+  );
 
   return story;
 }
@@ -68,9 +119,13 @@ export async function advanceStory(
     mode?: "normal" | "end_story" | "continue_after_ending";
   },
 ) {
-  const previousSegments = await listSegmentsByStory(story.id);
-  const previousDecisions = await listDecisionsByStory(story.id);
-  const profile = (await getPlayerProfile(story.id)) ?? createEmptyPlayerProfile(story.id);
+  const generationMode = resolveGenerationMode(story, options);
+  const [previousSegments, previousDecisions, storedProfile] = await Promise.all([
+    listSegmentsByStory(story.id),
+    listDecisionsByStory(story.id),
+    getPlayerProfile(story.id),
+  ]);
+  const profile = storedProfile ?? createEmptyPlayerProfile(story.id);
   let nextProfile = profile;
   const currentSegment = previousSegments[previousSegments.length - 1];
 
@@ -100,15 +155,22 @@ export async function advanceStory(
     });
 
     nextProfile = updatePlayerProfile(profile, decision);
-    await putDecision(decision);
-    await putPlayerProfile(nextProfile);
+    await Promise.all([putDecision(decision), putPlayerProfile(nextProfile)]);
+    runInBackground(syncDecisionMemory(settings, story, decision), "Decision memory sync");
+    runInBackground(
+      syncPlayerProfileMemory(settings, story, nextProfile),
+      "Player profile sync",
+    );
   }
 
-  const audioScript = await generateStorySegment(settings, {
+  const [previousSegmentsForPrompt, previousDecisionsForPrompt] = await Promise.all([
+    listSegmentsByStory(story.id),
+    listDecisionsByStory(story.id),
+  ]);
+  const retrievalContext = await retrieveStoryContext(settings, {
     story,
-    previousSegments: await listSegmentsByStory(story.id),
-    previousDecisions: await listDecisionsByStory(story.id),
-    playerProfile: nextProfile,
+    previousSegments: previousSegmentsForPrompt,
+    previousDecisions: previousDecisionsForPrompt,
     selectedAction: options?.selectedAction
       ? {
           choiceId: options.selectedAction.choiceId,
@@ -116,12 +178,28 @@ export async function advanceStory(
           isFreeText: options.selectedAction.isFreeText,
         }
       : null,
-    mode: options?.mode ?? "normal",
+  });
+
+  const audioScript = await generateStorySegment(settings, {
+    story,
+    previousSegments: previousSegmentsForPrompt,
+    previousDecisions: previousDecisionsForPrompt,
+    playerProfile: nextProfile,
+    retrievalContext,
+    selectedAction: options?.selectedAction
+      ? {
+          choiceId: options.selectedAction.choiceId,
+          choiceText: options.selectedAction.choiceText,
+          isFreeText: options.selectedAction.isFreeText,
+        }
+      : null,
+    mode: generationMode,
   });
 
   const segment = createSegmentRecord(story.id, audioScript);
   const resolved = await resolveSegmentAudio(settings, story, segment);
   await putSegment(resolved.segment);
+  const assets = await listStoryAssetMap(story.id);
 
   const nextStory = {
     ...story,
@@ -133,12 +211,7 @@ export async function advanceStory(
     continuedAfterEnding:
       options?.mode === "continue_after_ending" ? true : story.continuedAfterEnding,
     totalDurationSec:
-      story.totalDurationSec +
-      (resolved.segment.resolvedAudio?.narrationAssetId
-        ? (
-            await listStoryAssetMap(story.id)
-          )[resolved.segment.resolvedAudio.narrationAssetId]?.durationSec ?? 0
-        : 0),
+      story.totalDurationSec + getNarrationDurationSec(resolved.segment, assets),
     totalDecisions: options?.selectedAction ? story.totalDecisions + 1 : story.totalDecisions,
     cacheHitCount: story.cacheHitCount + resolved.cacheHitCount,
     cacheMissCount: story.cacheMissCount + resolved.cacheMissCount,
@@ -146,11 +219,16 @@ export async function advanceStory(
   } satisfies Story;
 
   await putStory(nextStory);
+  runInBackground(syncStoryWorldMemory(settings, nextStory), "Story world sync");
+  runInBackground(
+    syncPlayerProfileMemory(settings, nextStory, nextProfile),
+    "Player profile sync",
+  );
 
   return {
     story: nextStory,
     segment: resolved.segment,
     playerProfile: nextProfile,
-    assets: await listStoryAssetMap(story.id),
+    assets,
   };
 }

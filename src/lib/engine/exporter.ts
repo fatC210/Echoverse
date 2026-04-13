@@ -59,7 +59,7 @@ async function renderStoryAudio(
   try {
     const scheduled: Array<{
       segment: Segment;
-      narration?: AudioBuffer;
+      narration: AudioBuffer[];
       music?: AudioBuffer;
       sfx: Array<{ buffer: AudioBuffer; startSec: number; volume: number; looping: boolean; durationSec: number }>;
       durationSec: number;
@@ -67,16 +67,23 @@ async function renderStoryAudio(
     let totalDurationSec = 0;
 
     for (const segment of segments) {
-      const narrationAsset = segment.resolvedAudio?.narrationAssetId
-        ? assets[segment.resolvedAudio.narrationAssetId]
-        : undefined;
+      const narrationAssets =
+        segment.resolvedAudio?.narrationCues?.length
+          ? segment.resolvedAudio.narrationCues
+              .map((cue) => assets[cue.assetId])
+              .filter((asset): asset is AudioAsset => Boolean(asset))
+          : segment.resolvedAudio?.narrationAssetId
+            ? [assets[segment.resolvedAudio.narrationAssetId]].filter(
+                (asset): asset is AudioAsset => Boolean(asset),
+              )
+            : [];
       const musicAsset = segment.resolvedAudio?.musicAssetId
         ? assets[segment.resolvedAudio.musicAssetId]
         : undefined;
 
-      const narration = narrationAsset
-        ? await decodeWithContext(decodeContext, narrationAsset.audioBlob)
-        : undefined;
+      const narration = await Promise.all(
+        narrationAssets.map((asset) => decodeWithContext(decodeContext, asset.audioBlob)),
+      );
       const music = musicAsset ? await decodeWithContext(decodeContext, musicAsset.audioBlob) : undefined;
 
       const sfx = [] as Array<{
@@ -111,7 +118,7 @@ async function renderStoryAudio(
         0,
       );
       const durationSec = Math.max(
-        narration?.duration ?? 0,
+        narration.reduce((totalDuration, buffer) => totalDuration + buffer.duration, 0),
         music?.duration ?? 0,
         sfxDuration,
         1,
@@ -164,11 +171,16 @@ async function renderStoryAudio(
         source.stop(timelineCursor + layer.startSec + layer.durationSec);
       }
 
-      if (item.narration) {
-        const source = offline.createBufferSource();
-        source.buffer = item.narration;
-        source.connect(narrationGain);
-        source.start(timelineCursor);
+      if (item.narration.length) {
+        let narrationCursor = timelineCursor;
+
+        for (const buffer of item.narration) {
+          const source = offline.createBufferSource();
+          source.buffer = buffer;
+          source.connect(narrationGain);
+          source.start(narrationCursor);
+          narrationCursor += buffer.duration;
+        }
       }
 
       timelineCursor += item.durationSec + 0.6;

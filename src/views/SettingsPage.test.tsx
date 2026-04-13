@@ -1,6 +1,7 @@
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, waitFor } from "@testing-library/react";
+import * as elevenLabsService from "@/lib/services/elevenlabs";
 import * as llmService from "@/lib/services/llm";
 import { DEFAULT_SETTINGS } from "@/lib/constants/defaults";
 import { useSettingsStore } from "@/lib/store/settings-store";
@@ -46,6 +47,19 @@ vi.mock("@/lib/services/llm", () => ({
   testLlmConnection: vi.fn(),
 }));
 
+vi.mock("@/lib/services/elevenlabs", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/services/elevenlabs")>(
+    "@/lib/services/elevenlabs",
+  );
+
+  return {
+    ...actual,
+    listElevenLabsVoices: vi.fn(),
+    previewElevenLabsVoice: vi.fn(),
+    testElevenLabsConnection: vi.fn(),
+  };
+});
+
 describe("SettingsPage", () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -54,6 +68,7 @@ describe("SettingsPage", () => {
       isHydrated: true,
     });
     vi.mocked(llmService.testLlmConnection).mockResolvedValue(true);
+    vi.mocked(elevenLabsService.listElevenLabsVoices).mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -113,6 +128,42 @@ describe("SettingsPage", () => {
 
     await waitFor(() => {
       expect(llmService.testLlmConnection).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it("selects the first voice when the voice library loads without a saved default", async () => {
+    useSettingsStore.setState({
+      ...useSettingsStore.getState(),
+      elevenlabs: {
+        apiKey: "test-elevenlabs-key",
+        verifiedApiKey: "test-elevenlabs-key",
+      },
+      voice: {
+        voiceId: "",
+        voiceName: "",
+        voiceDescription: "",
+      },
+    });
+    vi.mocked(elevenLabsService.listElevenLabsVoices).mockResolvedValue([
+      {
+        voice_id: "voice-first",
+        name: "First Voice",
+      },
+      {
+        voice_id: "voice-second",
+        name: "Second Voice",
+      },
+    ]);
+
+    render(<SettingsPage />);
+
+    await waitFor(() => {
+      expect(elevenLabsService.listElevenLabsVoices).toHaveBeenCalledTimes(1);
+      expect(useSettingsStore.getState().voice).toMatchObject({
+        voiceId: "voice-first",
+        voiceName: "First Voice",
+        voiceDescription: "",
+      });
     });
   });
 });

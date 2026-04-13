@@ -11,15 +11,127 @@ import { formatDuration } from "@/lib/utils/echoverse";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Brain, Music, ArrowRight } from "lucide-react";
 
+type FloatingParticleConfig = {
+  delay: number;
+  x: number;
+  y: number;
+  size: number;
+  duration: number;
+  driftX: number;
+  driftY: number;
+  peakOpacity: number;
+};
+
+type GlowOrbConfig = {
+  delay: number;
+  x: number;
+  y: number;
+  size: number;
+  driftX: number;
+  driftY: number;
+  duration: number;
+};
+
+type ShootingStarConfig = {
+  delay: number;
+  startX: number;
+  startY: number;
+  repeatDelay: number;
+};
+
+type PulsingDotConfig = {
+  x: number;
+  y: number;
+  delay: number;
+  size: number;
+  duration: number;
+};
+
+const seededValue = (seed: number) => {
+  const value = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+  return value - Math.floor(value);
+};
+
+const getEdgePosition = (seed: number) => {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const x = seededValue(seed + attempt * 2 + 1) * 100;
+    const y = seededValue(seed + attempt * 2 + 2) * 100;
+
+    if (!(x > 25 && x < 75 && y > 20 && y < 80)) {
+      return { x, y };
+    }
+  }
+
+  return {
+    x: seededValue(seed + 101) < 0.5 ? 12 : 88,
+    y: seededValue(seed + 102) * 100,
+  };
+};
+
+const particles: FloatingParticleConfig[] = Array.from({ length: 60 }, (_, i) => {
+  const seed = 1000 + i * 17;
+  const { x, y } = getEdgePosition(seed);
+
+  return {
+    delay: i * 0.4 + seededValue(seed + 1) * 2,
+    x,
+    y,
+    size: 1 + seededValue(seed + 2) * 3.5,
+    duration: 5 + seededValue(seed + 3) * 10,
+    driftX: (seededValue(seed + 4) - 0.5) * 50,
+    driftY: -(20 + seededValue(seed + 5) * 40),
+    peakOpacity: 0.5 + seededValue(seed + 6) * 0.3,
+  };
+});
+
+const glowOrbs: GlowOrbConfig[] = Array.from({ length: 6 }, (_, i) => {
+  const seed = 2000 + i * 23;
+  const { x, y } = getEdgePosition(seed);
+
+  return {
+    delay: i * 2,
+    x,
+    y,
+    size: 40 + seededValue(seed + 1) * 60,
+    driftX: (seededValue(seed + 2) - 0.5) * 80,
+    driftY: (seededValue(seed + 3) - 0.5) * 80,
+    duration: 12 + seededValue(seed + 4) * 8,
+  };
+});
+
+const shootingStars: ShootingStarConfig[] = Array.from({ length: 4 }, (_, i) => {
+  const seed = 3000 + i * 29;
+
+  return {
+    delay: i * 5 + seededValue(seed + 1) * 3,
+    startX: seededValue(seed + 2) * 20,
+    startY: seededValue(seed + 3) * 30,
+    repeatDelay: 8 + seededValue(seed + 4) * 12,
+  };
+});
+
+const pulsingDots: PulsingDotConfig[] = Array.from({ length: 15 }, (_, i) => {
+  const seed = 4000 + i * 19;
+  const { x, y } = getEdgePosition(seed);
+
+  return {
+    x,
+    y,
+    delay: i * 0.8 + seededValue(seed + 1) * 2,
+    size: 2 + seededValue(seed + 2) * 3,
+    duration: 3 + seededValue(seed + 3) * 3,
+  };
+});
+
 /* Standard small particle */
-const FloatingParticle = ({ delay, x, y, size, duration }: { delay: number; x: number; y: number; size: number; duration: number }) => (
+const FloatingParticle = ({ delay, x, y, size, duration, driftX, driftY, peakOpacity }: FloatingParticleConfig) => (
   <motion.div
     className="absolute rounded-full bg-accent"
     style={{ left: `${x}%`, top: `${y}%`, width: size, height: size }}
     animate={{
-      y: [0, -(20 + Math.random() * 40), 0],
-      x: [0, (Math.random() - 0.5) * 50, 0],
-      opacity: [0, 0.5 + Math.random() * 0.3, 0],
+      y: [0, driftY, 0],
+      x: [0, driftX, 0],
+      opacity: [0, peakOpacity, 0],
       scale: [0.5, 1, 0.5],
     }}
     transition={{ duration, delay, repeat: Infinity, ease: "easeInOut" }}
@@ -27,7 +139,7 @@ const FloatingParticle = ({ delay, x, y, size, duration }: { delay: number; x: n
 );
 
 /* Glowing orb - larger, blurred, slow-moving */
-const GlowOrb = ({ delay, x, y, size }: { delay: number; x: number; y: number; size: number }) => (
+const GlowOrb = ({ delay, x, y, size, driftX, driftY, duration }: GlowOrbConfig) => (
   <motion.div
     className="absolute rounded-full bg-accent/20"
     style={{
@@ -36,17 +148,17 @@ const GlowOrb = ({ delay, x, y, size }: { delay: number; x: number; y: number; s
       boxShadow: `0 0 ${size}px ${size / 3}px hsl(var(--accent) / 0.15)`,
     }}
     animate={{
-      x: [0, (Math.random() - 0.5) * 80, 0],
-      y: [0, (Math.random() - 0.5) * 80, 0],
+      x: [0, driftX, 0],
+      y: [0, driftY, 0],
       opacity: [0.1, 0.35, 0.1],
       scale: [0.8, 1.2, 0.8],
     }}
-    transition={{ duration: 12 + Math.random() * 8, delay, repeat: Infinity, ease: "easeInOut" }}
+    transition={{ duration, delay, repeat: Infinity, ease: "easeInOut" }}
   />
 );
 
 /* Shooting star - fast diagonal streak */
-const ShootingStar = ({ delay, startX, startY }: { delay: number; startX: number; startY: number }) => (
+const ShootingStar = ({ delay, startX, startY, repeatDelay }: ShootingStarConfig) => (
   <motion.div
     className="absolute"
     style={{ left: `${startX}%`, top: `${startY}%` }}
@@ -56,7 +168,7 @@ const ShootingStar = ({ delay, startX, startY }: { delay: number; startX: number
       y: [0, 120],
       opacity: [0, 0.8, 0],
     }}
-    transition={{ duration: 1.5, delay, repeat: Infinity, repeatDelay: 8 + Math.random() * 12, ease: "easeIn" }}
+    transition={{ duration: 1.5, delay, repeat: Infinity, repeatDelay, ease: "easeIn" }}
   >
     <div
       className="bg-accent rounded-full"
@@ -73,7 +185,7 @@ const ShootingStar = ({ delay, startX, startY }: { delay: number; startX: number
 );
 
 /* Pulsing dot - stays in place, breathes */
-const PulsingDot = ({ x, y, delay, size }: { x: number; y: number; delay: number; size: number }) => (
+const PulsingDot = ({ x, y, delay, size, duration }: PulsingDotConfig) => (
   <motion.div
     className="absolute rounded-full bg-accent"
     style={{ left: `${x}%`, top: `${y}%`, width: size, height: size }}
@@ -86,7 +198,7 @@ const PulsingDot = ({ x, y, delay, size }: { x: number; y: number; delay: number
         `0 0 0px 0px hsl(var(--accent) / 0)`,
       ],
     }}
-    transition={{ duration: 3 + Math.random() * 3, delay, repeat: Infinity, ease: "easeInOut" }}
+    transition={{ duration, delay, repeat: Infinity, ease: "easeInOut" }}
   />
 );
 
@@ -94,37 +206,6 @@ const HeroSection = () => {
   const lang = useSettingsStore((s) => s.preferences.interfaceLang);
   const hasRequiredConfiguration = useSettingsStore((s) => s.hasRequiredConfiguration());
   const router = useRouter();
-
-  // Helper: generate position avoiding center content zone (30-70% x, 25-75% y)
-  const edgePos = () => {
-    let x: number, y: number;
-    do {
-      x = Math.random() * 100;
-      y = Math.random() * 100;
-    } while (x > 25 && x < 75 && y > 20 && y < 80);
-    return { x, y };
-  };
-
-  const particles = Array.from({ length: 60 }, (_, i) => {
-    const { x, y } = edgePos();
-    return { delay: i * 0.4 + Math.random() * 2, x, y, size: 1 + Math.random() * 3.5, duration: 5 + Math.random() * 10 };
-  });
-
-  const glowOrbs = Array.from({ length: 6 }, (_, i) => {
-    const { x, y } = edgePos();
-    return { delay: i * 2, x, y, size: 40 + Math.random() * 60 };
-  });
-
-  const shootingStars = Array.from({ length: 4 }, (_, i) => ({
-    delay: i * 5 + Math.random() * 3,
-    startX: Math.random() * 20,
-    startY: Math.random() * 30,
-  }));
-
-  const pulsingDots = Array.from({ length: 15 }, (_, i) => {
-    const { x, y } = edgePos();
-    return { x, y, delay: i * 0.8 + Math.random() * 2, size: 2 + Math.random() * 3 };
-  });
 
   return (
     <section className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-4 overflow-hidden">

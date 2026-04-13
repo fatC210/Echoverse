@@ -15,6 +15,26 @@ function normalizeApiKey(value?: string) {
   return value?.trim() ?? "";
 }
 
+function normalizePromptText(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function buildSoundEffectPrompt(description: string) {
+  const prompt = normalizePromptText(description);
+  const suffix =
+    "Non-verbal ambient sound effect only. No speech, spoken words, narration, dialogue, singing, chanting, or human voice.";
+
+  return prompt ? `${prompt}. ${suffix}` : suffix;
+}
+
+function buildMusicPrompt(description: string) {
+  const prompt = normalizePromptText(description);
+  const suffix =
+    "Instrumental background music only. No vocals, spoken words, narration, voiceover, choir, chanting, or human voice.";
+
+  return prompt ? `${prompt}. ${suffix}` : suffix;
+}
+
 export function isElevenLabsVerified(settings: ElevenLabsSettings) {
   const apiKey = normalizeApiKey(settings.apiKey);
   const verifiedApiKey = normalizeApiKey(settings.verifiedApiKey);
@@ -217,7 +237,7 @@ export async function generateSoundEffect(
       Accept: "audio/mpeg",
     },
     body: JSON.stringify({
-      text: description,
+      text: buildSoundEffectPrompt(description),
       duration_seconds: durationSec || undefined,
       prompt_influence: 0.3,
       loop: looping,
@@ -240,7 +260,7 @@ export async function generateMusicTrack(
         Accept: "audio/mpeg",
       },
       body: JSON.stringify({
-        prompt: description,
+        prompt: buildMusicPrompt(description),
         music_length_ms: durationSec * 1000,
         force_instrumental: true,
       }),

@@ -275,6 +275,81 @@ describe("CreateStoryPage", () => {
     expect(options).toMatchObject({ temperature: 1, max_tokens: 260 });
   });
 
+  it("accepts alternate valid premise fields without showing an error", async () => {
+    vi.mocked(llmService.generateStructuredJson).mockResolvedValue({
+      story_premise: "A watchmaker starts finding clocks already set to the moments his town will lose next.",
+    } as never);
+
+    useSettingsStore.setState({
+      ...DEFAULT_SETTINGS,
+      llm: {
+        ...DEFAULT_SETTINGS.llm,
+        apiKey: "sk-test",
+      },
+      isHydrated: true,
+    });
+
+    render(<CreateStoryPage />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByTitle("AI Generate Premise"));
+    });
+
+    await waitFor(() => {
+      expect(llmService.generateStructuredJson).toHaveBeenCalledTimes(1);
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByDisplayValue(
+          "A watchmaker starts finding clocks already set to the moments his town will lose next.",
+        ),
+      ).toBeInTheDocument();
+    });
+
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it("accepts nested metadata responses when they still contain a valid premise", async () => {
+    vi.mocked(llmService.generateStructuredJson).mockResolvedValue({
+      status: "ok",
+      language: "en",
+      message: {
+        content:
+          "{\"premise\":\"A lighthouse mechanic keeps repairing beacons that begin warning ships about wrecks scheduled for tomorrow.\"}",
+      },
+    } as never);
+
+    useSettingsStore.setState({
+      ...DEFAULT_SETTINGS,
+      llm: {
+        ...DEFAULT_SETTINGS.llm,
+        apiKey: "sk-test",
+      },
+      isHydrated: true,
+    });
+
+    render(<CreateStoryPage />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByTitle("AI Generate Premise"));
+    });
+
+    await waitFor(() => {
+      expect(llmService.generateStructuredJson).toHaveBeenCalledTimes(1);
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByDisplayValue(
+          "A lighthouse mechanic keeps repairing beacons that begin warning ships about wrecks scheduled for tomorrow.",
+        ),
+      ).toBeInTheDocument();
+    });
+
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
   it("feeds selected tags into premise generation guidance", async () => {
     vi.mocked(llmService.generateStructuredJson).mockResolvedValue({
       premise: "A frightened detective on a drifting station realizes each emergency signal was sent by the next victim.",

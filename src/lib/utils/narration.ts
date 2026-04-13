@@ -1,3 +1,5 @@
+import type { AudioAsset, Segment } from "@/lib/types/echoverse";
+
 function splitWhitespaceSeparatedNarration(text: string) {
   return text.match(/\S+\s*/gu) ?? [];
 }
@@ -31,4 +33,29 @@ export function splitNarrationForReveal(text: string) {
   }
 
   return splitCjkNarration(normalized);
+}
+
+export function getNarrationAssetIds(segment: Pick<Segment, "resolvedAudio">) {
+  const cueAssetIds =
+    segment.resolvedAudio?.narrationCues
+      ?.map((cue) => cue.assetId)
+      .filter((assetId) => Boolean(assetId)) ?? [];
+
+  if (cueAssetIds.length) {
+    return cueAssetIds;
+  }
+
+  return segment.resolvedAudio?.narrationAssetId
+    ? [segment.resolvedAudio.narrationAssetId]
+    : [];
+}
+
+export function getNarrationDurationSec(
+  segment: Pick<Segment, "resolvedAudio">,
+  assets: Record<string, AudioAsset>,
+) {
+  return getNarrationAssetIds(segment).reduce(
+    (totalDuration, assetId) => totalDuration + (assets[assetId]?.durationSec ?? 0),
+    0,
+  );
 }

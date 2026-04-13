@@ -9,7 +9,7 @@ import type {
 } from "@/lib/types/echoverse";
 
 const DB_NAME = "echoverse_db";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 interface EchoverseDB extends DBSchema {
   stories: {
@@ -63,32 +63,57 @@ interface EchoverseDB extends DBSchema {
 
 let dbPromise: Promise<IDBPDatabase<EchoverseDB>> | null = null;
 
+function ensureIndex(
+  store: {
+    indexNames: DOMStringList;
+    createIndex: (name: string, keyPath: string | string[]) => unknown;
+  },
+  name: string,
+  keyPath: string | string[],
+) {
+  if (!store.indexNames.contains(name)) {
+    store.createIndex(name, keyPath);
+  }
+}
+
 function ensureDb() {
   if (!dbPromise) {
     dbPromise = openDB<EchoverseDB>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        const stories = db.createObjectStore("stories", { keyPath: "id" });
-        stories.createIndex("by-updatedAt", "updatedAt");
-        stories.createIndex("by-status", "status");
+      upgrade(db, _oldVersion, _newVersion, tx) {
+        const stories = db.objectStoreNames.contains("stories")
+          ? tx.objectStore("stories")
+          : db.createObjectStore("stories", { keyPath: "id" });
+        ensureIndex(stories, "by-updatedAt", "updatedAt");
+        ensureIndex(stories, "by-status", "status");
 
-        const segments = db.createObjectStore("segments", { keyPath: "id" });
-        segments.createIndex("by-storyId", "storyId");
-        segments.createIndex("by-storyId-createdAt", ["storyId", "createdAt"]);
+        const segments = db.objectStoreNames.contains("segments")
+          ? tx.objectStore("segments")
+          : db.createObjectStore("segments", { keyPath: "id" });
+        ensureIndex(segments, "by-storyId", "storyId");
+        ensureIndex(segments, "by-storyId-createdAt", ["storyId", "createdAt"]);
 
-        const audioAssets = db.createObjectStore("audio_assets", { keyPath: "id" });
-        audioAssets.createIndex("by-storyId", "storyId");
-        audioAssets.createIndex("by-storyId-category", ["storyId", "category"]);
+        const audioAssets = db.objectStoreNames.contains("audio_assets")
+          ? tx.objectStore("audio_assets")
+          : db.createObjectStore("audio_assets", { keyPath: "id" });
+        ensureIndex(audioAssets, "by-storyId", "storyId");
+        ensureIndex(audioAssets, "by-storyId-category", ["storyId", "category"]);
 
-        const decisions = db.createObjectStore("decisions", { keyPath: "id" });
-        decisions.createIndex("by-storyId", "storyId");
-        decisions.createIndex("by-segmentId", "segmentId");
+        const decisions = db.objectStoreNames.contains("decisions")
+          ? tx.objectStore("decisions")
+          : db.createObjectStore("decisions", { keyPath: "id" });
+        ensureIndex(decisions, "by-storyId", "storyId");
+        ensureIndex(decisions, "by-segmentId", "segmentId");
 
-        const profiles = db.createObjectStore("player_profile", { keyPath: "id" });
-        profiles.createIndex("by-storyId", "storyId");
+        const profiles = db.objectStoreNames.contains("player_profile")
+          ? tx.objectStore("player_profile")
+          : db.createObjectStore("player_profile", { keyPath: "id" });
+        ensureIndex(profiles, "by-storyId", "storyId");
 
-        const customTags = db.createObjectStore("custom_tags", { keyPath: "id" });
-        customTags.createIndex("by-createdAt", "createdAt");
-        customTags.createIndex("by-usageCount", "usageCount");
+        const customTags = db.objectStoreNames.contains("custom_tags")
+          ? tx.objectStore("custom_tags")
+          : db.createObjectStore("custom_tags", { keyPath: "id" });
+        ensureIndex(customTags, "by-createdAt", "createdAt");
+        ensureIndex(customTags, "by-usageCount", "usageCount");
       },
     });
   }
@@ -229,7 +254,12 @@ export async function putDecision(decision: Decision) {
 
 export async function getPlayerProfile(storyId: string) {
   const db = await ensureDb();
-  const profiles = await db.getAllFromIndex("player_profile", "by-storyId", storyId);
+  const tx = db.transaction("player_profile", "readonly");
+  const store = tx.objectStore("player_profile");
+  const profiles = store.indexNames.contains("by-storyId")
+    ? await store.index("by-storyId").getAll(storyId)
+    : (await store.getAll()).filter((profile) => profile.storyId === storyId);
+  await tx.done;
   return profiles[0];
 }
 

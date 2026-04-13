@@ -15,6 +15,7 @@ class AudioMixer {
   private musicGain: GainNode | null = null;
   private currentMusicSource: AudioBufferSourceNode | null = null;
   private activeSources = new Set<AudioBufferSourceNode>();
+  private currentMusicMixFactor = 1;
   private volumes: MixerVolumes = {
     master: 1,
     narration: 1,
@@ -62,7 +63,20 @@ class AudioMixer {
     this.masterGain.gain.value = this.volumes.master;
     this.narrationGain.gain.value = this.volumes.narration;
     this.sfxGain.gain.value = this.volumes.sfx;
-    this.musicGain.gain.value = this.volumes.music;
+    this.musicGain.gain.value = this.clampVolume(this.volumes.music * this.currentMusicMixFactor);
+  }
+
+  private clampVolume(value: number) {
+    return Math.min(Math.max(value, 0), 1);
+  }
+
+  private getSegmentMusicMixFactor(segment: Segment) {
+    const authoredMusicVolume = segment.audioScript.music?.volume ?? 0.4;
+    return authoredMusicVolume / 0.4;
+  }
+
+  private getSegmentMusicVolume(segment: Segment) {
+    return this.clampVolume(this.volumes.music * this.getSegmentMusicMixFactor(segment));
   }
 
   private async decodeAudio(blob: Blob) {
@@ -81,6 +95,23 @@ class AudioMixer {
     this.applyVolumes();
   }
 
+  async pause() {
+    if (this.context?.state === "running") {
+      await this.context.suspend();
+    }
+  }
+
+  async resume() {
+    if (!this.context) {
+      await this.ensureContext();
+      return;
+    }
+
+    if (this.context.state === "suspended") {
+      await this.context.resume();
+    }
+  }
+
   stopAll() {
     for (const source of this.activeSources) {
       try {
@@ -92,6 +123,7 @@ class AudioMixer {
 
     this.activeSources.clear();
     this.currentMusicSource = null;
+    this.currentMusicMixFactor = 1;
   }
 
   async playSegment(segment: Segment, assets: Record<string, AudioAsset>) {
@@ -104,18 +136,40 @@ class AudioMixer {
       };
     }
 
+    const hasOpeningCue = segment.audioScript.sfx_layers.some(
+      (layer) => !layer.looping && layer.start_sec <= 0.2,
+    );
     const startAt = context.currentTime + 0.05;
-    const narrationAsset = segment.resolvedAudio.narrationAssetId
-      ? assets[segment.resolvedAudio.narrationAssetId]
-      : undefined;
+    const narrationStartAt = startAt + (hasOpeningCue ? 0.45 : 0);
+    const narrationCueAssets =
+      segment.resolvedAudio.narrationCues?.length
+        ? segment.resolvedAudio.narrationCues
+            .map((cue) => ({
+              cue,
+              asset: assets[cue.assetId],
+            }))
+            .filter((item) => Boolean(item.asset))
+        : [];
+    const narrationAsset =
+      narrationCueAssets.length === 0 && segment.resolvedAudio.narrationAssetId
+        ? assets[segment.resolvedAudio.narrationAssetId]
+        : undefined;
 
-    let narrationDurationSec = narrationAsset?.durationSec ?? 0;
+    let narrationDurationSec = narrationCueAssets.reduce(
+      (totalDuration, item) => totalDuration + (item.asset?.durationSec ?? 0),
+      0,
+    );
+    if (!narrationDurationSec) {
+      narrationDurationSec = narrationAsset?.durationSec ?? 0;
+    }
     let narrationPromise = Promise.resolve();
 
     if (segment.resolvedAudio.musicAssetId) {
       const musicAsset = assets[segment.resolvedAudio.musicAssetId];
 
       if (musicAsset && this.musicGain) {
+        this.currentMusicMixFactor = this.getSegmentMusicMixFactor(segment);
+        const targetMusicVolume = this.getSegmentMusicVolume(segment);
         const buffer = await this.decodeAudio(musicAsset.audioBlob);
         const source = context.createBufferSource();
         source.buffer = buffer;
@@ -123,8 +177,9 @@ class AudioMixer {
         source.connect(this.musicGain);
 
         if (this.currentMusicSource && this.musicGain) {
+          const currentMusicVolume = this.musicGain.gain.value;
           this.musicGain.gain.cancelScheduledValues(context.currentTime);
-          this.musicGain.gain.setValueAtTime(this.volumes.music, context.currentTime);
+          this.musicGain.gain.setValueAtTime(currentMusicVolume, context.currentTime);
           this.musicGain.gain.linearRampToValueAtTime(0, context.currentTime + 4);
 
           try {
@@ -135,7 +190,7 @@ class AudioMixer {
         }
 
         this.musicGain.gain.setValueAtTime(0, startAt);
-        this.musicGain.gain.linearRampToValueAtTime(this.volumes.music, startAt + 2);
+        this.musicGain.gain.linearRampToValueAtTime(targetMusicVolume, startAt + 2);
         source.start(startAt);
         this.currentMusicSource = source;
         this.activeSources.add(source);
@@ -162,12 +217,15 @@ class AudioMixer {
       const gain = context.createGain();
       source.buffer = buffer;
       source.loop = layer.looping;
-      gain.gain.value = layer.volume;
+      gain.gain.value = Math.min(
+        layer.volume * (!layer.looping && layer.start_sec <= 0.5 ? 1.2 : 1),
+        1,
+      );
       source.connect(gain);
       gain.connect(this.sfxGain);
       source.start(startAt + layer.start_sec);
 
-      const stopAt = startAt + Math.max(narrationDurationSec, layer.duration_sec) + 1;
+      const stopAt = narrationStartAt + Math.max(narrationDurationSec, layer.duration_sec) + 1;
       source.stop(stopAt);
       this.activeSources.add(source);
       source.onended = () => {
@@ -175,33 +233,66 @@ class AudioMixer {
       };
     }
 
-    if (narrationAsset && this.narrationGain) {
-      const buffer = await this.decodeAudio(narrationAsset.audioBlob);
-      const source = context.createBufferSource();
-      source.buffer = buffer;
-      source.connect(this.narrationGain);
-      narrationDurationSec = buffer.duration;
+    if ((narrationCueAssets.length || narrationAsset) && this.narrationGain) {
+      const scheduledNarration =
+        narrationCueAssets.length > 0
+          ? await Promise.all(
+              narrationCueAssets.map(async ({ asset }) => ({
+                buffer: await this.decodeAudio(asset.audioBlob),
+              })),
+            )
+          : narrationAsset
+            ? [
+                {
+                  buffer: await this.decodeAudio(narrationAsset.audioBlob),
+                },
+              ]
+            : [];
+
+      narrationDurationSec = scheduledNarration.reduce(
+        (totalDuration, item) => totalDuration + item.buffer.duration,
+        0,
+      );
 
       if (this.musicGain) {
-        const currentMusicVolume = this.volumes.music;
-        this.musicGain.gain.cancelScheduledValues(startAt);
-        this.musicGain.gain.setValueAtTime(currentMusicVolume, startAt);
-        this.musicGain.gain.linearRampToValueAtTime(currentMusicVolume * 0.4, startAt + 0.4);
+        const currentMusicVolume = this.getSegmentMusicVolume(segment);
+        this.musicGain.gain.cancelScheduledValues(narrationStartAt);
+        this.musicGain.gain.setValueAtTime(currentMusicVolume, narrationStartAt);
+        this.musicGain.gain.linearRampToValueAtTime(
+          currentMusicVolume * 0.4,
+          narrationStartAt + 0.4,
+        );
         this.musicGain.gain.linearRampToValueAtTime(
           currentMusicVolume,
-          startAt + narrationDurationSec + 0.6,
+          narrationStartAt + narrationDurationSec + 0.6,
         );
       }
 
       narrationPromise = new Promise<void>((resolve) => {
-        source.onended = () => {
-          this.activeSources.delete(source);
+        if (!scheduledNarration.length) {
           resolve();
-        };
-      });
+          return;
+        }
 
-      source.start(startAt);
-      this.activeSources.add(source);
+        let cueStartAt = narrationStartAt;
+
+        scheduledNarration.forEach((item, index) => {
+          const source = context.createBufferSource();
+          source.buffer = item.buffer;
+          source.connect(this.narrationGain);
+          source.start(cueStartAt);
+          this.activeSources.add(source);
+
+          source.onended = () => {
+            this.activeSources.delete(source);
+            if (index === scheduledNarration.length - 1) {
+              resolve();
+            }
+          };
+
+          cueStartAt += item.buffer.duration;
+        });
+      });
     }
 
     return {

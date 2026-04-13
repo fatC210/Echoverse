@@ -603,6 +603,24 @@ const SettingsPage = () => {
   }, [elevenlabs, showVoiceLibrary]);
 
   useEffect(() => {
+    if (!showVoiceLibrary || !voices.length) {
+      return;
+    }
+
+    const hasSelectedVoice = voices.some((item) => item.voice_id === voice.voiceId);
+    if (hasSelectedVoice) {
+      return;
+    }
+
+    const [firstVoice] = voices;
+    updateVoice({
+      voiceId: firstVoice.voice_id,
+      voiceName: firstVoice.name,
+      voiceDescription: "",
+    });
+  }, [showVoiceLibrary, updateVoice, voice.voiceId, voices]);
+
+  useEffect(() => {
     if (showVoiceLibrary) {
       elevenlabsSuccessSnapshotRef.current = serializeElevenLabs(elevenlabs);
       setElevenlabsStatus("success");

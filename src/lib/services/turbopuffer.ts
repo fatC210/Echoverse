@@ -36,10 +36,12 @@ export async function writeNamespaceRows(
   settings: TurbopufferSettings,
   namespace: string,
   rows: Array<Record<string, unknown>>,
+  options?: Record<string, unknown>,
 ) {
   return requestJson(`v2/namespaces/${namespace}`, settings, {
     method: "POST",
     body: JSON.stringify({
+      ...options,
       upsert_rows: rows,
     }),
   });

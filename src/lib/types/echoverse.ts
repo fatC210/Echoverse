@@ -105,6 +105,12 @@ export interface MusicScript {
   transition: string;
 }
 
+export interface NarrationVoiceCue {
+  kind: "narration" | "dialogue";
+  text: string;
+  speaker?: string | null;
+}
+
 export interface AudioScript {
   segment_id: string;
   chapter: string;
@@ -116,6 +122,7 @@ export interface AudioScript {
   narration: {
     text: string;
     voice_style: string;
+    voice_cues?: NarrationVoiceCue[];
   };
   sfx_layers: AudioLayerScript[];
   music: MusicScript | null;
@@ -163,8 +170,17 @@ export interface SegmentAudioStatus {
   music: "pending" | "ready" | "failed";
 }
 
+export interface NarrationCueRef {
+  assetId: string;
+  text: string;
+  kind: "narration" | "dialogue";
+  voiceId: string;
+  speaker?: string;
+}
+
 export interface SegmentAudioRefs {
   narrationAssetId?: string;
+  narrationCues?: NarrationCueRef[];
   sfxAssetIds: string[];
   musicAssetId?: string;
 }
@@ -185,6 +201,7 @@ export interface AudioAsset {
   storyId: string;
   category: "sfx" | "music" | "tts";
   description: string;
+  generationVersion?: string;
   audioBlob: Blob;
   durationSec: number;
   looping: boolean;
@@ -252,10 +269,29 @@ export interface SegmentGenerationInput {
   previousSegments: Segment[];
   previousDecisions: Decision[];
   playerProfile: PlayerProfile;
+  retrievalContext?: StoryRetrievalContext | null;
   selectedAction?: {
     choiceId: string;
     choiceText: string;
     isFreeText: boolean;
   } | null;
   mode?: "normal" | "end_story" | "continue_after_ending";
+}
+
+export interface StoryRetrievalMatch {
+  id: string;
+  source: "semantic" | "keyword" | "decision";
+  type: string;
+  entityId?: string;
+  label: string;
+  text: string;
+  score?: number;
+  timestamp?: string;
+}
+
+export interface StoryRetrievalContext {
+  queryText: string;
+  semanticMatches: StoryRetrievalMatch[];
+  keywordMatches: StoryRetrievalMatch[];
+  decisionMatches: StoryRetrievalMatch[];
 }
