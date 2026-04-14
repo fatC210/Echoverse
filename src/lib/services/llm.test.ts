@@ -223,6 +223,70 @@ describe("generateStructuredJson", () => {
     });
   });
 
+  it("retries when a parseable json response was cut off by the token limit", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                finish_reason: "length",
+                message: {
+                  content: "{\"premise\":\"A relay operator hears a warning that ends midsentence\"}",
+                },
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                finish_reason: "stop",
+                message: {
+                  content:
+                    "{\"premise\":\"A relay operator hears a warning that ends midsentence, then demands a complete answer from the signal on the second pass.\"}",
+                },
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        ),
+      );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await generateStructuredJson<{ premise: string }>(
+      llmSettings,
+      [{ role: "user", content: "Generate a premise." }],
+    );
+
+    expect(result).toEqual({
+      premise:
+        "A relay operator hears a warning that ends midsentence, then demands a complete answer from the signal on the second pass.",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body)).messages.at(-1)).toEqual({
+      role: "user",
+      content:
+        "Your previous reply was not valid JSON. Return the full answer again as exactly one complete JSON object. Do not use markdown fences. Do not include commentary before or after the JSON. Keep all descriptions concise so the response fits comfortably within the token limit. The previous reply was cut off before completion, so shorten descriptions and arrays if needed.",
+    });
+  });
+
   it("attempts one repair pass after two malformed json responses", async () => {
     const fetchMock = vi
       .fn()

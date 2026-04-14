@@ -334,6 +334,21 @@ function buildJsonRetryMessages(messages: ChatMessage[], finishReason: string | 
   ];
 }
 
+function shouldAcceptStructuredJsonResult(
+  finishReason: string | null,
+  repaired: boolean,
+) {
+  if (repaired) {
+    return false;
+  }
+
+  if (finishReason === "length") {
+    return false;
+  }
+
+  return true;
+}
+
 export async function testLlmConnection(settings: LlmSettings) {
   await requestChat(
     settings,
@@ -374,7 +389,7 @@ export async function generateStructuredJson<T>(
   try {
     const parsed = extractJsonResultFromText<T>(firstAttempt.content);
 
-    if (!parsed.repaired) {
+    if (shouldAcceptStructuredJsonResult(firstAttempt.finishReason, parsed.repaired)) {
       return parsed.value;
     }
   } catch (error) {
@@ -392,7 +407,7 @@ export async function generateStructuredJson<T>(
   try {
     const parsed = extractJsonResultFromText<T>(secondAttempt.content);
 
-    if (!parsed.repaired) {
+    if (shouldAcceptStructuredJsonResult(secondAttempt.finishReason, parsed.repaired)) {
       return parsed.value;
     }
   } catch (retryError) {

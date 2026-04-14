@@ -72,7 +72,7 @@ describe("generateStoryPremise", () => {
     });
   });
 
-  it("still rejects prompt-leak instruction text when every attempt is unusable", async () => {
+  it("returns an emergency fallback premise when every attempt is unusable", async () => {
     vi.mocked(generateStructuredJson)
       .mockResolvedValueOnce({
         premise: "Output format: write exactly 2 to 3 sentences.",
@@ -86,10 +86,22 @@ describe("generateStoryPremise", () => {
 
     await expect(
       generateStoryPremise(DEFAULT_SETTINGS.llm, baseInput),
-    ).rejects.toThrow("Premise was invalid");
+    ).resolves.toEqual({
+      premise:
+        "A reluctant outsider arrives at a place that has just been sealed off from the outside world to solve the one problem everyone else has stopped naming. Before dawn, they uncover evidence that the real danger started waiting for them long before they arrived.",
+    });
   });
 
-  it("still rejects placeholder premise text after exhausting structured and fallback attempts", async () => {
+  it("builds a tag-aware emergency fallback when placeholder text exhausts every attempt", async () => {
+    const taggedInput = {
+      language: "en" as const,
+      selectedTags: [
+        { id: "space", label: "Space", isCustom: false },
+        { id: "horror", label: "Horror", isCustom: false },
+        { id: "detective", label: "Detective", isCustom: false },
+      ],
+    };
+
     vi.mocked(generateStructuredJson)
       .mockResolvedValueOnce({
         premise: "...",
@@ -100,7 +112,10 @@ describe("generateStoryPremise", () => {
     vi.mocked(generateLlmText).mockResolvedValue("...");
 
     await expect(
-      generateStoryPremise(DEFAULT_SETTINGS.llm, baseInput),
-    ).rejects.toThrow("Premise was invalid");
+      generateStoryPremise(DEFAULT_SETTINGS.llm, taggedInput),
+    ).resolves.toEqual({
+      premise:
+        "A detective arrives aboard a drifting space station to finish what should have been a routine assignment. After dark, the place starts answering every question with details from tomorrow, and the next warning is addressed to them by name.",
+    });
   });
 });

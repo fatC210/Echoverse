@@ -8,6 +8,7 @@ import * as storyRuntime from "@/lib/engine/story-runtime";
 import PlayerPage from "./PlayerPage";
 
 const pushMock = vi.fn();
+const searchParamGetMock = vi.fn(() => null);
 const playSegmentMock = vi.fn();
 const pauseMock = vi.fn();
 const resumeMock = vi.fn();
@@ -23,7 +24,7 @@ vi.mock("next/navigation", () => ({
     storyId: "story-1",
   }),
   useSearchParams: () => ({
-    get: () => null,
+    get: searchParamGetMock,
   }),
 }));
 
@@ -162,6 +163,8 @@ const baseAssets = {
 describe("PlayerPage", () => {
   beforeEach(() => {
     pushMock.mockReset();
+    searchParamGetMock.mockReset();
+    searchParamGetMock.mockReturnValue(null);
     playSegmentMock.mockReset();
     pauseMock.mockReset();
     resumeMock.mockReset();
@@ -246,6 +249,193 @@ describe("PlayerPage", () => {
     expect(playSegmentMock).toHaveBeenCalledTimes(1);
   });
 
+  it("does not skip to choices when narration has been paused longer than the fallback timeout", async () => {
+    vi.useFakeTimers();
+
+    playSegmentMock.mockResolvedValue({
+      narrationDurationSec: 1,
+      completion: new Promise<void>(() => {
+        // Simulate narration completion relying on the timeout fallback path.
+      }),
+    });
+
+    await act(async () => {
+      render(<PlayerPage />);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(playSegmentMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /pause/i }));
+      await Promise.resolve();
+    });
+
+    expect(pauseMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      vi.advanceTimersByTime(20_000);
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.queryByRole("button", { name: /open the door/i }),
+    ).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /resume/i }));
+      await Promise.resolve();
+    });
+
+    expect(resumeMock).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole("button", { name: /open the door/i }),
+    ).not.toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(2_300);
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.queryByRole("button", { name: /open the door/i }),
+    ).not.toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.getByRole("button", { name: /open the door/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not immediately jump to the ending screen if narration completion resolves while paused", async () => {
+    vi.useFakeTimers();
+
+    let finishPlayback = () => {};
+    playSegmentMock.mockImplementation(() => ({
+      narrationDurationSec: 4,
+      completion: new Promise<void>((resolve) => {
+        finishPlayback = resolve;
+      }),
+    }));
+
+    vi.mocked(db.listSegmentsByStory).mockResolvedValue([
+      {
+        ...baseSegment,
+        audioScript: {
+          ...baseSegment.audioScript,
+          is_ending: true,
+          choices: [],
+        },
+      } as never,
+    ]);
+    vi.mocked(db.getStory).mockResolvedValue({
+      ...baseStory,
+      status: "playing",
+      endingName: "Open Circuit",
+    } as never);
+
+    await act(async () => {
+      render(<PlayerPage />);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.queryByRole("button", { name: /continue this story/i }),
+    ).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /pause/i }));
+      await Promise.resolve();
+    });
+
+    expect(pauseMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      finishPlayback();
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.queryByRole("button", { name: /continue this story/i }),
+    ).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /resume/i }));
+      await Promise.resolve();
+    });
+
+    expect(resumeMock).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole("button", { name: /continue this story/i }),
+    ).not.toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(3_000);
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.queryByRole("button", { name: /continue this story/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("labels the ending recap entry without repeating the chapter title", async () => {
+    searchParamGetMock.mockImplementation((key: string) =>
+      key === "view" ? "summary" : null,
+    );
+    vi.mocked(db.getStory).mockResolvedValue({
+      ...baseStory,
+      status: "completed",
+      endingName: "Open Circuit",
+      totalDurationSec: 10,
+      totalDecisions: 1,
+      cacheHitCount: 0,
+      cacheMissCount: 0,
+    } as never);
+    vi.mocked(db.listSegmentsByStory).mockResolvedValue([
+      {
+        ...baseSegment,
+        id: "segment-1",
+        audioScript: {
+          ...baseSegment.audioScript,
+          chapter_title: "The Signal",
+          is_ending: false,
+        },
+      } as never,
+      {
+        ...baseSegment,
+        id: "segment-2",
+        audioScript: {
+          ...baseSegment.audioScript,
+          chapter_title: "The Signal",
+          is_ending: true,
+          ending_name: "Open Circuit",
+          choices: [],
+        },
+      } as never,
+    ]);
+
+    await act(async () => {
+      render(<PlayerPage />);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.getByRole("heading", { name: "The Signal" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Ending: Open Circuit")).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("heading", { name: "The Signal" }),
+    ).toHaveLength(1);
+  });
+
   it("retries autoplay cleanly when the page is mounted under strict mode", async () => {
     playSegmentMock.mockResolvedValue({
       narrationDurationSec: 1,
@@ -307,6 +497,165 @@ describe("PlayerPage", () => {
     });
 
     expect(storyRuntime.advanceStory).toHaveBeenCalledTimes(1);
+  });
+
+  it("starts the loading overlay at world-context retrieval after a choice is made", async () => {
+    playSegmentMock.mockResolvedValue({
+      narrationDurationSec: 1,
+      completion: Promise.resolve(),
+    });
+
+    vi.mocked(storyRuntime.advanceStory).mockImplementation(
+      () =>
+        new Promise(() => {
+          // Keep the request pending so the overlay remains visible.
+        }) as never,
+    );
+
+    await act(async () => {
+      render(<PlayerPage />);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /open the door/i })).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /open the door/i }));
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Retrieving world context...").className).toContain("text-foreground");
+    expect(screen.getByText("Resolving audio layers...").className).toContain(
+      "text-muted-foreground/30",
+    );
+  });
+
+  it("advances the loading overlay when story generation reports a later stage", async () => {
+    playSegmentMock.mockResolvedValue({
+      narrationDurationSec: 1,
+      completion: Promise.resolve(),
+    });
+
+    let onStageChange: ((stage: "retrieval_context" | "generate_segment" | "resolve_audio") => void) |
+      undefined;
+
+    vi.mocked(storyRuntime.advanceStory).mockImplementation(
+      (_settings, _story, options) => {
+        onStageChange = options?.onStageChange;
+        return new Promise(() => {
+          // Keep the request pending so the overlay remains visible.
+        }) as never;
+      },
+    );
+
+    await act(async () => {
+      render(<PlayerPage />);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /open the door/i })).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /open the door/i }));
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      onStageChange?.("resolve_audio");
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Retrieving world context...").className).toContain(
+      "text-muted-foreground",
+    );
+    expect(screen.getByText("Resolving audio layers...").className).toContain("text-foreground");
+  });
+
+  it("does not replay the ending segment while continuing the story from the end screen", async () => {
+    vi.useFakeTimers();
+
+    const endingSegment = {
+      ...baseSegment,
+      id: "segment-ending",
+      audioScript: {
+        ...baseSegment.audioScript,
+        is_ending: true,
+        choices: [],
+      },
+    } as never;
+    const continuedSegment = {
+      ...baseSegment,
+      id: "segment-continued",
+      audioScript: {
+        ...baseSegment.audioScript,
+        is_ending: false,
+      },
+    } as never;
+
+    let resolveAdvanceStory: ((value: unknown) => void) | null = null;
+
+    vi.mocked(db.listSegmentsByStory)
+      .mockResolvedValueOnce([endingSegment])
+      .mockResolvedValueOnce([endingSegment, continuedSegment]);
+    vi.mocked(storyRuntime.advanceStory).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveAdvanceStory = resolve;
+        }) as never,
+    );
+    playSegmentMock.mockResolvedValue({
+      narrationDurationSec: 1,
+      completion: Promise.resolve(),
+    });
+
+    await act(async () => {
+      render(<PlayerPage />);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(playSegmentMock).toHaveBeenCalledTimes(1);
+    expect(playSegmentMock).toHaveBeenLastCalledWith(endingSegment, baseAssets);
+
+    await act(async () => {
+      vi.advanceTimersByTime(2_500);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.getByRole("button", { name: /continue this story/i }),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /continue this story/i }));
+      await Promise.resolve();
+    });
+
+    expect(playSegmentMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Retrieving world context...")).toBeInTheDocument();
+
+    await act(async () => {
+      resolveAdvanceStory?.({
+        story: {
+          ...baseStory,
+          continuedAfterEnding: true,
+        },
+        segment: continuedSegment,
+        assets: baseAssets,
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(playSegmentMock).toHaveBeenCalledTimes(2);
+    expect(playSegmentMock).toHaveBeenLastCalledWith(continuedSegment, baseAssets);
   });
 
   it("shows choices after the text reveal finishes even when narration audio is unavailable", async () => {

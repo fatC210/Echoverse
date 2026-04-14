@@ -11,7 +11,11 @@ import { getStory, listSegmentsByStory, putPlayerProfile, putStory } from "@/lib
 import { getAudioMixer, type MixerVolumes } from "@/lib/engine/audio-mixer";
 import { exportStoryAudioMp3, exportStoryMarkdown, exportWorldJson } from "@/lib/engine/exporter";
 import { createEmptyPlayerProfile } from "@/lib/engine/player-profile";
-import { advanceStory, listStoryAssetMap } from "@/lib/engine/story-runtime";
+import {
+  advanceStory,
+  listStoryAssetMap,
+  type AdvanceStoryStage,
+} from "@/lib/engine/story-runtime";
 import { isElevenLabsVerified, listElevenLabsVoices, previewElevenLabsVoice } from "@/lib/services/elevenlabs";
 import type { AudioAsset, Segment, Story, VoiceOption } from "@/lib/types/echoverse";
 import { createId, formatDuration } from "@/lib/utils/echoverse";
@@ -59,6 +63,136 @@ import {
 const FALLBACK_PREVIEW_TEXT =
   "The sun slowly sank behind the distant hills, casting long shadows across the valley.";
 
+type LoadingOverlayStep = {
+  text: string;
+  state: "pending" | "active" | "completed";
+};
+
+function waitForActivePlaybackDuration({
+  durationMs,
+  isPausedRef,
+  completion,
+  onTimeout,
+  signal,
+}: {
+  durationMs: number;
+  isPausedRef: { current: boolean };
+  completion?: Promise<void>;
+  onTimeout?: () => void;
+  signal?: AbortSignal;
+}) {
+  return new Promise<void>((resolve, reject) => {
+    let remainingMs = Math.max(durationMs, 0);
+    let lastTickAt = Date.now();
+    let completionResolvedWhilePaused = false;
+    let settled = false;
+    let timerId: number | null = null;
+
+    const cleanup = () => {
+      if (timerId !== null) {
+        window.clearTimeout(timerId);
+        timerId = null;
+      }
+
+      signal?.removeEventListener("abort", handleAbort);
+    };
+
+    const settle = (callback: () => void) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      cleanup();
+      callback();
+    };
+
+    const handleAbort = () => {
+      settle(resolve);
+    };
+
+    const handleTick = () => {
+      timerId = window.setTimeout(() => {
+        const now = Date.now();
+        const elapsedMs = now - lastTickAt;
+        lastTickAt = now;
+
+        if (!isPausedRef.current) {
+          remainingMs -= elapsedMs;
+        }
+
+        if (completionResolvedWhilePaused && remainingMs <= 0) {
+          settle(resolve);
+          return;
+        }
+
+        if (remainingMs <= 0) {
+          onTimeout?.();
+          settle(resolve);
+          return;
+        }
+
+        handleTick();
+      }, Math.min(Math.max(remainingMs, 1), 100));
+    };
+
+    if (signal?.aborted) {
+      handleAbort();
+      return;
+    }
+
+    signal?.addEventListener("abort", handleAbort, { once: true });
+
+    if (completion) {
+      completion.then(
+        () => {
+          if (isPausedRef.current) {
+            completionResolvedWhilePaused = true;
+            return;
+          }
+
+          settle(resolve);
+        },
+        (error) => settle(() => reject(error)),
+      );
+    }
+
+    if (remainingMs <= 0) {
+      onTimeout?.();
+      settle(resolve);
+      return;
+    }
+
+    handleTick();
+  });
+}
+
+const ADVANCE_STORY_STAGE_ORDER: AdvanceStoryStage[] = [
+  "retrieval_context",
+  "generate_segment",
+  "resolve_audio",
+];
+
+function buildAdvanceStoryLoadingSteps(
+  lang: "en" | "zh",
+  activeStage: AdvanceStoryStage,
+): LoadingOverlayStep[] {
+  const labels: Record<AdvanceStoryStage, string> = {
+    retrieval_context:
+      lang === "zh" ? "正在检索世界上下文..." : "Retrieving world context...",
+    generate_segment:
+      lang === "zh" ? "正在生成叙事段落..." : "Generating the next segment...",
+    resolve_audio:
+      lang === "zh" ? "正在解析音频层..." : "Resolving audio layers...",
+  };
+  const activeIndex = ADVANCE_STORY_STAGE_ORDER.indexOf(activeStage);
+
+  return ADVANCE_STORY_STAGE_ORDER.map((stage, index) => ({
+    text: labels[stage],
+    state: index < activeIndex ? "completed" : index === activeIndex ? "active" : "pending",
+  }));
+}
+
 function AtmosphericBackground({ mood }: { mood: MoodType }) {
   const config = MOOD_MAP[mood];
   return (
@@ -80,6 +214,7 @@ function NarrationDisplay({
   text,
   isPlaying,
   isPaused,
+  forceFullText,
   durationSec,
   narrationStartAtSec,
   getPlaybackTimeSec,
@@ -87,6 +222,7 @@ function NarrationDisplay({
   text: string;
   isPlaying: boolean;
   isPaused: boolean;
+  forceFullText: boolean;
   durationSec: number;
   narrationStartAtSec: number | null;
   getPlaybackTimeSec: () => number | null;
@@ -127,6 +263,12 @@ function NarrationDisplay({
 
     previousIsPlayingRef.current = isPlaying;
   }, [isPlaying]);
+
+  useEffect(() => {
+    if (forceFullText) {
+      setVisibleChunks(chunks.length);
+    }
+  }, [chunks.length, forceFullText]);
 
   useEffect(() => {
     if (!isPlaying || isPaused) {
@@ -179,11 +321,13 @@ function NarrationDisplay({
     thresholds,
   ]);
 
+  const renderedChunkCount = forceFullText ? chunks.length : visibleChunks;
+
   return (
     <div className="mx-auto w-full max-w-2xl px-6 pb-0">
       <p className="narration-text pb-0 leading-relaxed text-foreground/90">
-        {chunks.slice(0, visibleChunks).join("")}
-        {isPlaying && visibleChunks < chunks.length ? <span className="ml-1 inline-block h-5 w-[2px] animate-pulse bg-accent" /> : null}
+        {chunks.slice(0, renderedChunkCount).join("")}
+        {isPlaying && !forceFullText && renderedChunkCount < chunks.length ? <span className="ml-1 inline-block h-5 w-[2px] animate-pulse bg-accent" /> : null}
       </p>
     </div>
   );
@@ -412,7 +556,17 @@ function VolumeControl({ volumes, onChange }: { volumes: MixerVolumes; onChange:
   );
 }
 
-function LoadingOverlay({ open, lines, error, onRetry }: { open: boolean; lines: string[]; error: string | null; onRetry: (() => void) | null }) {
+function LoadingOverlay({
+  open,
+  steps,
+  error,
+  onRetry,
+}: {
+  open: boolean;
+  steps: LoadingOverlayStep[];
+  error: string | null;
+  onRetry: (() => void) | null;
+}) {
   if (!open && !error) {
     return null;
   }
@@ -430,8 +584,23 @@ function LoadingOverlay({ open, lines, error, onRetry }: { open: boolean; lines:
             />
           ))}
         </div>
-        {lines.map((line, index) => (
-          <p key={`${line}_${index}`} className={`font-serif text-lg ${index === lines.length - 1 ? "text-foreground" : "text-muted-foreground"}`}>{line}</p>
+        {steps.map((step, index) => (
+          <p
+            key={`${step.text}_${index}`}
+            className={`font-serif text-lg ${
+              step.state === "active"
+                ? "text-foreground"
+                : step.state === "completed"
+                  ? "text-muted-foreground"
+                  : "text-muted-foreground/30"
+            }`}
+          >
+            {step.state === "completed" ? <span className="mr-2 text-accent">✓</span> : null}
+            {step.state === "active" ? (
+              <RefreshCw size={14} className="mr-2 inline animate-spin text-accent" />
+            ) : null}
+            {step.text}
+          </p>
         ))}
         {error ? (
           <div className="space-y-3">
@@ -498,6 +667,24 @@ function StoryEndScreen({
   onHome: () => void;
 }) {
   const lang = useSettingsStore((state) => state.preferences.interfaceLang);
+  const getReviewTitle = useCallback(
+    (segment: Segment, previousSegment?: Segment) => {
+      if (segment.audioScript.is_ending) {
+        const endingTitle =
+          segment.audioScript.ending_name ??
+          story.endingName ??
+          (lang === "zh" ? "未命名结局" : "Untitled Ending");
+        return lang === "zh" ? `结局：${endingTitle}` : `Ending: ${endingTitle}`;
+      }
+
+      if (previousSegment?.audioScript.chapter_title === segment.audioScript.chapter_title) {
+        return null;
+      }
+
+      return segment.audioScript.chapter_title;
+    },
+    [lang, story.endingName],
+  );
   const assetCounts = Object.values(assets).reduce(
     (accumulator, asset) => {
       accumulator[asset.category] += 1;
@@ -535,7 +722,10 @@ function StoryEndScreen({
           <div className="space-y-6">
             {segments.map((segment, index) => (
               <div key={`${segment.id}_${index}`} className="space-y-2">
-                <h3 className="text-sm font-medium text-accent">{segment.audioScript.chapter_title}</h3>
+                {(() => {
+                  const reviewTitle = getReviewTitle(segment, segments[index - 1]);
+                  return reviewTitle ? <h3 className="text-sm font-medium text-accent">{reviewTitle}</h3> : null;
+                })()}
                 <p className="font-serif text-sm leading-relaxed text-foreground/80">{segment.audioScript.narration.text}</p>
                 {segment.choiceMade ? <p className="ml-1 border-l-2 border-accent/30 pl-3 text-xs text-muted-foreground">{lang === "zh" ? "你的选择：" : "Your choice: "} {segment.choiceMade.choiceText}</p> : null}
               </div>
@@ -587,7 +777,7 @@ export default function PlayerPage() {
   const [narrationStartAtSec, setNarrationStartAtSec] = useState<number | null>(null);
   const [showChoices, setShowChoices] = useState(false);
   const [showEndScreen, setShowEndScreen] = useState(isSummaryView);
-  const [loadingLines, setLoadingLines] = useState<string[]>([]);
+  const [loadingSteps, setLoadingSteps] = useState<LoadingOverlayStep[]>([]);
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [volumes, setVolumes] = useState<MixerVolumes>({ master: 1, narration: 1, sfx: 0.7, music: 0.4 });
@@ -604,6 +794,35 @@ export default function PlayerPage() {
   const filteredVoices = filterVoicesByGender(
     availableVoices,
     voiceGenderFilter,
+  );
+
+  const showAdvanceStoryStage = useCallback(
+    (stage: AdvanceStoryStage) => {
+      setLoadingSteps(buildAdvanceStoryLoadingSteps(lang, stage));
+    },
+    [lang],
+  );
+
+  const setLoadingLines = useCallback(
+    (lines: string[]) => {
+      const initialAdvanceStorySteps = buildAdvanceStoryLoadingSteps(lang, "retrieval_context");
+      const isAdvanceStoryOverlay =
+        lines.length === initialAdvanceStorySteps.length &&
+        lines.every((line, index) => line === initialAdvanceStorySteps[index]?.text);
+
+      if (isAdvanceStoryOverlay) {
+        setLoadingSteps(initialAdvanceStorySteps);
+        return;
+      }
+
+      setLoadingSteps(
+        lines.map((text, index) => ({
+          text,
+          state: index === lines.length - 1 ? "active" : "completed",
+        })),
+      );
+    },
+    [lang],
   );
 
   useEffect(() => {
@@ -676,7 +895,10 @@ export default function PlayerPage() {
           onboardingCompleted: settings.onboardingCompleted,
         },
         sourceStory,
-        options,
+        {
+          ...options,
+          onStageChange: showAdvanceStoryStage,
+        },
       );
 
       const updatedSegments = await listSegmentsByStory(sourceStory.id);
@@ -854,6 +1076,9 @@ export default function PlayerPage() {
               onboardingCompleted: latestSettings.onboardingCompleted,
             },
             loadedStory,
+            {
+              onStageChange: showAdvanceStoryStage,
+            },
           );
           const updatedSegments = await listSegmentsByStory(loadedStory.id);
 
@@ -889,7 +1114,7 @@ export default function PlayerPage() {
       cancelled = true;
       mixer.stopAll();
     };
-  }, [isSummaryView, lang, mixer, reloadStory]);
+  }, [isSummaryView, lang, mixer, reloadStory, setLoadingLines, showAdvanceStoryStage]);
 
   useEffect(() => {
     if (!elevenlabsVerified) {
@@ -949,10 +1174,11 @@ export default function PlayerPage() {
     let cancelled = false;
     const sessionId = playbackSessionRef.current + 1;
     playbackSessionRef.current = sessionId;
-    let completionTimeout: number | null = null;
+    const playbackWaitController = new AbortController();
+    let playbackStartTimeout: number | null = null;
 
     const playCurrentSegment = async () => {
-      if (!currentSegment || showEndScreen) {
+      if (isLoading || !currentSegment || showEndScreen) {
         return;
       }
 
@@ -992,7 +1218,7 @@ export default function PlayerPage() {
           ? await Promise.race([
               mixer.playSegment(currentSegment, assetMap),
               new Promise<Awaited<ReturnType<typeof mixer.playSegment>>>((_, reject) => {
-                completionTimeout = window.setTimeout(() => {
+                playbackStartTimeout = window.setTimeout(() => {
                   reject(new Error("Segment playback start timed out"));
                 }, playbackStartTimeoutMs);
               }),
@@ -1001,9 +1227,9 @@ export default function PlayerPage() {
               narrationDurationSec: 0,
               completion: Promise.resolve(),
             };
-        if (completionTimeout !== null) {
-          window.clearTimeout(completionTimeout);
-          completionTimeout = null;
+        if (playbackStartTimeout !== null) {
+          window.clearTimeout(playbackStartTimeout);
+          playbackStartTimeout = null;
         }
         if (cancelled || playbackSessionRef.current !== sessionId) {
           return;
@@ -1029,38 +1255,23 @@ export default function PlayerPage() {
         setNarrationStartAtSec(result.narrationStartAtSec);
 
         if (!hasNarrationAudio) {
-          await new Promise<void>((resolve) => {
-            completionTimeout = window.setTimeout(
-              resolve,
-              Math.max(narrationDurationSec * 1000, 2500),
-            );
+          await waitForActivePlaybackDuration({
+            durationMs: Math.max(narrationDurationSec * 1000, 2500),
+            isPausedRef,
+            signal: playbackWaitController.signal,
           });
         } else {
-          await new Promise<void>((resolve, reject) => {
-            completionTimeout = window.setTimeout(() => {
+          await waitForActivePlaybackDuration({
+            durationMs: Math.max(narrationDurationSec * 1000 + 1500, 2500),
+            isPausedRef,
+            completion: result.completion,
+            signal: playbackWaitController.signal,
+            onTimeout: () => {
               console.warn(
                 "Narration completion timed out; continuing to choices with duration fallback.",
                 { segmentId: currentSegment.id },
               );
-              resolve();
-            }, Math.max(narrationDurationSec * 1000 + 1500, 2500));
-
-            result.completion.then(
-              () => {
-                if (completionTimeout !== null) {
-                  window.clearTimeout(completionTimeout);
-                  completionTimeout = null;
-                }
-                resolve();
-              },
-              (error) => {
-                if (completionTimeout !== null) {
-                  window.clearTimeout(completionTimeout);
-                  completionTimeout = null;
-                }
-                reject(error);
-              },
-            );
+            },
           });
         }
         if (cancelled || playbackSessionRef.current !== sessionId) {
@@ -1085,19 +1296,18 @@ export default function PlayerPage() {
           0,
         );
 
-        await new Promise<void>((resolve) => {
-          completionTimeout = window.setTimeout(
-            resolve,
-            Math.max(remainingMs, 250),
-          );
+        await waitForActivePlaybackDuration({
+          durationMs: Math.max(remainingMs, 250),
+          isPausedRef,
+          signal: playbackWaitController.signal,
         });
         if (cancelled || playbackSessionRef.current !== sessionId) {
           return;
         }
       } finally {
-        if (completionTimeout !== null) {
-          window.clearTimeout(completionTimeout);
-          completionTimeout = null;
+        if (playbackStartTimeout !== null) {
+          window.clearTimeout(playbackStartTimeout);
+          playbackStartTimeout = null;
         }
       }
 
@@ -1120,8 +1330,9 @@ export default function PlayerPage() {
     void playCurrentSegment();
     return () => {
       cancelled = true;
-      if (completionTimeout !== null) {
-        window.clearTimeout(completionTimeout);
+      playbackWaitController.abort();
+      if (playbackStartTimeout !== null) {
+        window.clearTimeout(playbackStartTimeout);
       }
       if (playbackSessionRef.current === sessionId) {
         playbackSessionRef.current += 1;
@@ -1133,7 +1344,7 @@ export default function PlayerPage() {
       isPausedRef.current = false;
       mixer.stopAll();
     };
-  }, [assetMap, currentSegment, mixer, showEndScreen]);
+  }, [assetMap, currentSegment, isLoading, mixer, showEndScreen]);
 
   useEffect(() => {
     if (!openPanel) {
@@ -1200,7 +1411,7 @@ export default function PlayerPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <AtmosphericBackground mood={mood} />
-      <LoadingOverlay open={isLoading} lines={loadingLines} error={loadingError} onRetry={loadingError ? (() => void generateSegment()) : null} />
+      <LoadingOverlay open={isLoading} steps={loadingSteps} error={loadingError} onRetry={loadingError ? (() => void generateSegment()) : null} />
 
       <motion.div className="relative z-30 flex items-center justify-between border-b border-border/20 bg-background/30 px-4 py-3 backdrop-blur-md" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-center gap-3">
@@ -1364,6 +1575,7 @@ export default function PlayerPage() {
             text={currentSegment?.audioScript.narration.text ?? ""}
             isPlaying={isNarrationPlaying}
             isPaused={isPaused}
+            forceFullText={showChoices || showEndScreen}
             durationSec={narrationDuration}
             narrationStartAtSec={narrationStartAtSec}
             getPlaybackTimeSec={getPlaybackTimeSec}

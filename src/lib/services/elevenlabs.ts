@@ -2,7 +2,7 @@ import type { EchoSettings } from "@/lib/constants/defaults";
 import type { VoiceOption } from "@/lib/types/echoverse";
 
 type ElevenLabsSettings = EchoSettings["elevenlabs"];
-const DEFAULT_MUSIC_OUTPUT_FORMAT = "mp3_standard";
+const DEFAULT_MUSIC_OUTPUT_FORMAT = "mp3_44100_128";
 const ELEVENLABS_DEFAULT_VOICE_PAGE_SIZE = 100;
 
 interface ElevenLabsVoiceListResponse {

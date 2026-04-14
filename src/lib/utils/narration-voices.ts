@@ -204,6 +204,7 @@ const GENERIC_SPEAKER_STOPWORDS = new Set(
 );
 
 type DialogueCuePlan = Omit<NarrationCueRef, "assetId">;
+type VoiceGender = "female" | "male";
 
 interface NarrationVoicePlanInput {
   text: string;
@@ -224,9 +225,50 @@ const QUOTE_PAIRS = [
   { open: "\u300C", close: "\u300D" },
   { open: "\u2018", close: "\u2019" },
 ] as const;
+const BUILT_IN_VOICE_GENDERS = new Map(
+  ELEVENLABS_VOICES.map((voice) => [voice.id, voice.gender as VoiceGender]),
+);
+const FEMALE_GENDER_HINT_PATTERNS = [
+  /她们?/gu,
+  /女人|女生|女孩|女士|小姐|姑娘|母亲|妈妈|姐姐|妹妹|阿姨|妻子|女声/gu,
+  /\b(?:she|her|hers|woman|female|girl|lady|mother|mom|sister|wife)\b/giu,
+] as const;
+const MALE_GENDER_HINT_PATTERNS = [
+  /他们?|男人|男生|男孩|先生|少年|父亲|爸爸|哥哥|弟弟|叔叔|丈夫|男声/gu,
+  /\b(?:he|him|his|man|male|boy|gentleman|father|dad|brother|husband)\b/giu,
+] as const;
 
 function normalizeCueText(value: string) {
   return value.replace(/\s+/gu, " ").trim();
+}
+
+function countPatternMatches(text: string, pattern: RegExp) {
+  return [...text.matchAll(pattern)].length;
+}
+
+function inferGenderFromText(text: string): VoiceGender | undefined {
+  if (!text.trim()) {
+    return undefined;
+  }
+
+  const femaleScore = FEMALE_GENDER_HINT_PATTERNS.reduce(
+    (score, pattern) => score + countPatternMatches(text, pattern),
+    0,
+  );
+  const maleScore = MALE_GENDER_HINT_PATTERNS.reduce(
+    (score, pattern) => score + countPatternMatches(text, pattern),
+    0,
+  );
+
+  if (!femaleScore && !maleScore) {
+    return undefined;
+  }
+
+  if (femaleScore === maleScore) {
+    return undefined;
+  }
+
+  return femaleScore > maleScore ? "female" : "male";
 }
 
 function normalizeSpeakerKey(value: string) {
@@ -326,6 +368,7 @@ function scoreVoiceForCharacter(character: WorldCharacter, voiceId: string) {
   ]
     .join(" ")
     .toLowerCase();
+  const inferredGender = inferGenderFromText(profileText);
 
   let score = 0;
 
@@ -347,12 +390,32 @@ function scoreVoiceForCharacter(character: WorldCharacter, voiceId: string) {
     score += 4;
   }
 
+  if (inferredGender && BUILT_IN_VOICE_GENDERS.get(voiceId) === inferredGender) {
+    score += 6;
+  }
+
   return score;
 }
 
 function getVoicePool(narratorVoiceId: string) {
   const filtered = BUILT_IN_VOICE_IDS.filter((voiceId) => voiceId !== narratorVoiceId);
   return filtered.length ? filtered : [...BUILT_IN_VOICE_IDS];
+}
+
+function getVoicePoolForGender(
+  narratorVoiceId: string,
+  preferredGender?: VoiceGender,
+) {
+  const voicePool = getVoicePool(narratorVoiceId);
+  if (!preferredGender) {
+    return voicePool;
+  }
+
+  const genderMatchedPool = voicePool.filter(
+    (voiceId) => BUILT_IN_VOICE_GENDERS.get(voiceId) === preferredGender,
+  );
+
+  return genderMatchedPool.length ? genderMatchedPool : voicePool;
 }
 
 function pickVoiceIdForCharacter(
@@ -383,8 +446,12 @@ function pickVoiceIdForCharacter(
     })[0];
 }
 
-function pickVoiceIdForUnknownSpeaker(name: string, narratorVoiceId: string) {
-  const voicePool = getVoicePool(narratorVoiceId);
+function pickVoiceIdForUnknownSpeaker(
+  name: string,
+  narratorVoiceId: string,
+  preferredGender?: VoiceGender,
+) {
+  const voicePool = getVoicePoolForGender(narratorVoiceId, preferredGender);
   const lowerName = name.toLowerCase();
 
   if (AI_LIKE_HINTS.some((hint) => lowerName.includes(hint))) {
@@ -452,6 +519,16 @@ function resolveDialogueSpeaker(
   );
 }
 
+function inferDialogueGenderFromContext(
+  text: string,
+  startIndex: number,
+  endIndex: number,
+) {
+  const prefix = text.slice(Math.max(0, startIndex - 96), startIndex);
+  const suffix = text.slice(endIndex, endIndex + 72);
+  return inferGenderFromText(`${prefix} ${suffix}`);
+}
+
 function pushCue(cues: DialogueCuePlan[], cue: DialogueCuePlan) {
   const normalizedText = normalizeCueText(cue.text);
   if (!normalizedText) {
@@ -480,17 +557,24 @@ function buildDialogueCueFromSpeaker(
   narratorVoiceId: string,
   speakerVoices: Map<string, string>,
   unknownSpeakerVoices: Map<string, string>,
+  preferredGender?: VoiceGender,
 ) {
   const normalizedSpeakerKey = speaker ? normalizeSpeakerKey(speaker) : undefined;
+  const anonymousSpeakerKey = speaker ? undefined : preferredGender ? `__${preferredGender}` : undefined;
+  const lookupKey = normalizedSpeakerKey ?? anonymousSpeakerKey;
   const voiceId =
     (normalizedSpeakerKey ? speakerVoices.get(normalizedSpeakerKey) : undefined) ??
-    (normalizedSpeakerKey
-      ? unknownSpeakerVoices.get(normalizedSpeakerKey)
+    (lookupKey
+      ? unknownSpeakerVoices.get(lookupKey)
       : undefined) ??
-    (speaker ? pickVoiceIdForUnknownSpeaker(speaker, narratorVoiceId) : narratorVoiceId);
+    (speaker
+      ? pickVoiceIdForUnknownSpeaker(speaker, narratorVoiceId, preferredGender)
+      : preferredGender
+        ? pickVoiceIdForUnknownSpeaker(preferredGender, narratorVoiceId, preferredGender)
+        : narratorVoiceId);
 
-  if (speaker && normalizedSpeakerKey && !speakerVoices.has(normalizedSpeakerKey)) {
-    unknownSpeakerVoices.set(normalizedSpeakerKey, voiceId);
+  if (lookupKey && !speakerVoices.has(lookupKey)) {
+    unknownSpeakerVoices.set(lookupKey, voiceId);
   }
 
   return {
@@ -525,6 +609,7 @@ function buildCuesFromStructuredPlan(
         narratorVoiceId,
         speakerVoices,
         unknownSpeakerVoices,
+        inferGenderFromText(normalizedText),
       );
 
       pushCue(cues, {
@@ -615,6 +700,7 @@ function buildAnchoredCuesFromStructuredPlan(
         narratorVoiceId,
         speakerVoices,
         unknownSpeakerVoices,
+        inferDialogueGenderFromContext(text, cueStartIndex, cueEndIndex),
       );
 
       pushCue(cues, {
@@ -718,6 +804,11 @@ export function planNarrationCues({
       narratorVoiceId,
       speakerVoices,
       unknownSpeakerVoices,
+      inferDialogueGenderFromContext(
+        text,
+        quoteRange.openIndex,
+        quoteRange.closeIndex + 1,
+      ),
     );
 
     pushCue(cues, {

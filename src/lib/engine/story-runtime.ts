@@ -76,6 +76,20 @@ function resolveGenerationMode(
     : requestedMode;
 }
 
+export type AdvanceStoryStage = "retrieval_context" | "generate_segment" | "resolve_audio";
+
+type AdvanceStoryOptions = {
+  selectedAction?: {
+    choiceId: string;
+    choiceText: string;
+    riskLevel: "low" | "medium" | "high";
+    isFreeText: boolean;
+    timeToDecideMs: number;
+  } | null;
+  mode?: "normal" | "end_story" | "continue_after_ending";
+  onStageChange?: (stage: AdvanceStoryStage) => void;
+};
+
 export async function createStoryExperience(
   settings: EchoSettings,
   input: WorldGenerationInput,
@@ -108,16 +122,7 @@ export async function listStoryAssetMap(storyId: string) {
 export async function advanceStory(
   settings: EchoSettings,
   story: Story,
-  options?: {
-    selectedAction?: {
-      choiceId: string;
-      choiceText: string;
-      riskLevel: "low" | "medium" | "high";
-      isFreeText: boolean;
-      timeToDecideMs: number;
-    } | null;
-    mode?: "normal" | "end_story" | "continue_after_ending";
-  },
+  options?: AdvanceStoryOptions,
 ) {
   const generationMode = resolveGenerationMode(story, options);
   const [previousSegments, previousDecisions, storedProfile] = await Promise.all([
@@ -167,6 +172,7 @@ export async function advanceStory(
     listSegmentsByStory(story.id),
     listDecisionsByStory(story.id),
   ]);
+  options?.onStageChange?.("retrieval_context");
   const retrievalContext = await retrieveStoryContext(settings, {
     story,
     previousSegments: previousSegmentsForPrompt,
@@ -180,6 +186,7 @@ export async function advanceStory(
       : null,
   });
 
+  options?.onStageChange?.("generate_segment");
   const audioScript = await generateStorySegment(settings, {
     story,
     previousSegments: previousSegmentsForPrompt,
@@ -197,6 +204,7 @@ export async function advanceStory(
   });
 
   const segment = createSegmentRecord(story.id, audioScript);
+  options?.onStageChange?.("resolve_audio");
   const resolved = await resolveSegmentAudio(settings, story, segment);
   await putSegment(resolved.segment);
   const assets = await listStoryAssetMap(story.id);

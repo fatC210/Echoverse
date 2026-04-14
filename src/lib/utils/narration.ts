@@ -82,8 +82,10 @@ export function buildNarrationRevealThresholds(chunks: string[]) {
   let accumulatedWeight = 0;
 
   return weights.map((weight) => {
+    const revealThreshold =
+      (accumulatedWeight + Math.max(weight * 0.18, 0.08)) / totalWeight;
     accumulatedWeight += weight;
-    return accumulatedWeight / totalWeight;
+    return revealThreshold;
   });
 }
 
@@ -104,8 +106,8 @@ export function getVisibleNarrationChunkCount(
   }
 
   for (let index = 0; index < thresholds.length; index += 1) {
-    if (progress <= thresholds[index]) {
-      return index + 1;
+    if (progress < thresholds[index]) {
+      return index;
     }
   }
 

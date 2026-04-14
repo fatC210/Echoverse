@@ -38,6 +38,8 @@ describe("splitNarrationForReveal", () => {
     expect(estimateNarrationChunkWeight(chunks[0])).toBeGreaterThan(
       estimateNarrationChunkWeight("Wait "),
     );
+    expect(thresholds[0]).toBeLessThan(thresholds[1]);
+    expect(getVisibleNarrationChunkCount(thresholds, 0.05)).toBe(0);
     expect(getVisibleNarrationChunkCount(thresholds, 0.2)).toBe(1);
     expect(getVisibleNarrationChunkCount(thresholds, 0.55)).toBe(2);
     expect(getVisibleNarrationChunkCount(thresholds, 1)).toBe(3);

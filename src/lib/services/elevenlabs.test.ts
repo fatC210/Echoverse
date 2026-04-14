@@ -113,7 +113,7 @@ describe("audio generation requests", () => {
     expect(body.text).toContain("No speech");
   });
 
-  it("calls the current ElevenLabs music endpoint with output format as a query parameter", async () => {
+  it("calls the current ElevenLabs music endpoint with a supported output format query parameter", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(new Blob(["audio"], { type: "audio/mpeg" }), {
         status: 200,
@@ -126,7 +126,7 @@ describe("audio generation requests", () => {
     await generateMusicTrack(settings, "slow ambient pulse", 20);
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/elevenlabs/v1/music?output_format=mp3_standard",
+      "/api/elevenlabs/v1/music?output_format=mp3_44100_128",
       expect.objectContaining({
         method: "POST",
       }),

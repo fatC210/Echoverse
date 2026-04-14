@@ -210,12 +210,11 @@ describe("CreateStoryPage", () => {
     });
   });
 
-  it("shows a response-format error instead of blaming api config when premise parsing fails", async () => {
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-
+  it("fills the textarea without an error toast when premise generation falls back to the local emergency template", async () => {
     vi.mocked(llmService.generateStructuredJson).mockRejectedValue(
       new Error("Could not parse JSON from model response"),
     );
+    vi.mocked(llmService.generateLlmText).mockResolvedValue("...");
 
     useSettingsStore.setState({
       ...DEFAULT_SETTINGS,
@@ -233,12 +232,14 @@ describe("CreateStoryPage", () => {
     });
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(
-        "The model returned an invalid format. Try again.",
-      );
+      expect(
+        screen.getByDisplayValue(
+          "A reluctant outsider arrives at a place that has just been sealed off from the outside world to solve the one problem everyone else has stopped naming. Before dawn, they uncover evidence that the real danger started waiting for them long before they arrived.",
+        ),
+      ).toBeInTheDocument();
     });
 
-    consoleErrorSpy.mockRestore();
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
   it("randomly generates a premise when no tags are selected", async () => {

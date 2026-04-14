@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { ELEVENLABS_VOICES } from "@/lib/constants/defaults";
 import { planNarrationCues } from "./narration-voices";
 
 describe("planNarrationCues", () => {
+  const femaleVoiceIds = ELEVENLABS_VOICES.filter((voice) => voice.gender === "female").map(
+    (voice) => voice.id,
+  );
+
   it("prefers structured playback cues so narration text can stay natural", () => {
     const narratorVoiceId = "nPczCjzI2devNBz1zQrb";
 
@@ -172,5 +177,48 @@ describe("planNarrationCues", () => {
       text: "Cold air settles over the room.",
       voiceId: narratorVoiceId,
     });
+  });
+
+  it("switches anonymous dialogue to a female voice when nearby prose marks the speaker as a woman", () => {
+    const narratorVoiceId = "nPczCjzI2devNBz1zQrb";
+
+    const cues = planNarrationCues({
+      text: '一个穿黑色风衣的女人从阴影里走出来。“你也发现了。” 她的声音平静得像在陈述天气。',
+      narratorVoiceId,
+      protagonistName: "林默",
+      characters: [],
+    });
+
+    const dialogueCue = cues.find((cue) => cue.kind === "dialogue");
+
+    expect(dialogueCue).toBeDefined();
+    expect(dialogueCue?.speaker).toBeUndefined();
+    expect(dialogueCue?.voiceId).not.toBe(narratorVoiceId);
+    expect(femaleVoiceIds).toContain(dialogueCue?.voiceId);
+  });
+
+  it("uses female context hints for structured dialogue cues even when the cue omits a speaker name", () => {
+    const narratorVoiceId = "nPczCjzI2devNBz1zQrb";
+
+    const cues = planNarrationCues({
+      text: '一个穿黑色风衣的女人从阴影里走出来，手里攥着追踪器。“你也发现了。” 她的声音平静得像在陈述天气。',
+      narratorVoiceId,
+      protagonistName: "林默",
+      characters: [],
+      scriptedCues: [
+        {
+          kind: "dialogue",
+          text: "你也发现了。",
+          speaker: null,
+        },
+      ],
+    });
+
+    const dialogueCue = cues.find((cue) => cue.kind === "dialogue");
+
+    expect(dialogueCue).toBeDefined();
+    expect(dialogueCue?.speaker).toBeUndefined();
+    expect(dialogueCue?.voiceId).not.toBe(narratorVoiceId);
+    expect(femaleVoiceIds).toContain(dialogueCue?.voiceId);
   });
 });
