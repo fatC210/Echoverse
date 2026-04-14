@@ -234,7 +234,7 @@ describe("CreateStoryPage", () => {
     await waitFor(() => {
       expect(
         screen.getByDisplayValue(
-          "A reluctant outsider arrives at a place that has just been sealed off from the outside world to solve the one problem everyone else has stopped naming. Before dawn, they uncover evidence that the real danger started waiting for them long before they arrived.",
+          "Someone who thought they were only passing through arrives at a place that no longer feels entirely connected to the outside world to deal with the problem everyone there has learned not to name. Before they can settle in, one small inconsistency suggests the real story there began long before their arrival.",
         ),
       ).toBeInTheDocument();
     });
@@ -289,7 +289,7 @@ describe("CreateStoryPage", () => {
   it("feeds selected tags into structured premise generation guidance", async () => {
     vi.mocked(llmService.generateStructuredJson).mockResolvedValue({
       premise:
-        "A frightened detective wakes alone on a drifting station and must reopen a murder case before the life-support cycle ends. Each emergency signal he traces was sent by the next victim, including one transmission stamped with his own badge number.",
+        "A terrified detective wakes alone on a drifting station and must reopen a murder case before the life-support cycle ends. Each emergency signal he traces leads to a corpse that should not still be moving, including one transmission stamped with his own badge number.",
     });
 
     useSettingsStore.setState({
@@ -321,11 +321,17 @@ describe("CreateStoryPage", () => {
     expect(messages[0].content).toContain(
       "When tags are provided, use them to build the premise",
     );
+    expect(messages[0].content).toContain(
+      "every selected tag must be clearly recognizable",
+    );
     expect(messages[1].content).toContain(
       "Space, Horror",
     );
     expect(messages[1].content).toContain(
       "use these tags to build the story premise",
+    );
+    expect(messages[1].content).toContain(
+      "Every selected tag must be clearly reflected in the premise",
     );
     expect(options).toMatchObject({ temperature: 0.85, max_tokens: 260 });
   });
@@ -400,7 +406,9 @@ describe("CreateStoryPage", () => {
 
     const [, messages] = vi.mocked(llmService.generateStructuredJson).mock.calls[0];
     expect(messages[0].content).toContain("你是 Echoverse 的故事前提写作者");
+    expect(messages[0].content).toContain("必须全程使用简体中文");
     expect(messages[0].content).toContain("必须写成 2 到 3 句话");
+    expect(messages[0].content).toContain("所有已选标签都必须让没看过标签列表的读者也能直接读出来");
   });
 
   it("retries once when the model returns parseable JSON but not a display-ready premise", async () => {

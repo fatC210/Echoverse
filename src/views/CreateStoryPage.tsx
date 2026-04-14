@@ -420,7 +420,7 @@ A substitute host at a late-night radio station keeps receiving calls that descr
   }
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="app-shell-page relative bg-background">
       {/* Background */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute inset-0 opacity-[0.015]"

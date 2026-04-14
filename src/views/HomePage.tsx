@@ -392,7 +392,7 @@ const RecentStories = () => {
 };
 
 const HomePage = () => (
-  <div className="min-h-screen bg-background">
+  <div className="app-shell-page bg-background">
     <HeroSection />
     <FeatureCards />
     <RecentStories />

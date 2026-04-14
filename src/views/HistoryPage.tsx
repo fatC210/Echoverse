@@ -76,7 +76,7 @@ const HistoryPage = () => {
       : "Export World Data";
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="app-shell-page bg-background">
       <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="mb-8 flex items-center gap-4">
           <Button

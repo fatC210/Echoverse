@@ -196,6 +196,11 @@
     pointer-events: none;
   }
 
+  .app-shell-page {
+    min-height: calc(100vh - var(--app-shell-offset, 0px));
+    min-height: calc(100dvh - var(--app-shell-offset, 0px));
+  }
+
   .input-game {
     background: hsl(var(--secondary) / 0.6);
     border: 1px solid hsl(var(--border) / 0.5);

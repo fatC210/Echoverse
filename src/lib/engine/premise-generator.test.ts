@@ -52,6 +52,36 @@ describe("generateStoryPremise", () => {
     expect(generateLlmText).toHaveBeenCalledTimes(1);
   });
 
+  it("retries when a parseable premise does not clearly reflect the selected tags", async () => {
+    const taggedInput = {
+      language: "en" as const,
+      selectedTags: [
+        { id: "space", label: "Space", isCustom: false },
+        { id: "horror", label: "Horror", isCustom: false },
+        { id: "detective", label: "Detective", isCustom: false },
+      ],
+    };
+
+    vi.mocked(generateStructuredJson)
+      .mockResolvedValueOnce({
+        premise:
+          "A courier discovers a suitcase that arrives one day before every disaster. When the case appears with her own address on it, she has one night to learn who is sending warnings from tomorrow.",
+      })
+      .mockResolvedValueOnce({
+        premise:
+          "A terrified detective arrives aboard a drifting space station to get through what should have been an ordinary assignment. When the first corpse opens its eyes after lights-out, he realizes the thing waiting in the dark already knows his name.",
+      });
+
+    const result = await generateStoryPremise(DEFAULT_SETTINGS.llm, taggedInput);
+
+    expect(result).toEqual({
+      premise:
+        "A terrified detective arrives aboard a drifting space station to get through what should have been an ordinary assignment. When the first corpse opens its eyes after lights-out, he realizes the thing waiting in the dark already knows his name.",
+    });
+    expect(generateStructuredJson).toHaveBeenCalledTimes(2);
+    expect(generateLlmText).not.toHaveBeenCalled();
+  });
+
   it("cleans labels and markdown fences from fallback text before accepting it", async () => {
     vi.mocked(generateStructuredJson)
       .mockResolvedValueOnce({
@@ -88,7 +118,7 @@ describe("generateStoryPremise", () => {
       generateStoryPremise(DEFAULT_SETTINGS.llm, baseInput),
     ).resolves.toEqual({
       premise:
-        "A reluctant outsider arrives at a place that has just been sealed off from the outside world to solve the one problem everyone else has stopped naming. Before dawn, they uncover evidence that the real danger started waiting for them long before they arrived.",
+        "Someone who thought they were only passing through arrives at a place that no longer feels entirely connected to the outside world to deal with the problem everyone there has learned not to name. Before they can settle in, one small inconsistency suggests the real story there began long before their arrival.",
     });
   });
 
@@ -115,7 +145,38 @@ describe("generateStoryPremise", () => {
       generateStoryPremise(DEFAULT_SETTINGS.llm, taggedInput),
     ).resolves.toEqual({
       premise:
-        "A detective arrives aboard a drifting space station to finish what should have been a routine assignment. After dark, the place starts answering every question with details from tomorrow, and the next warning is addressed to them by name.",
+        "A detective arrives aboard a drifting space station to get through what should have been an ordinary assignment. But the first sign that something is wrong feels as if it has been waiting specifically for them.",
+    });
+  });
+
+  it("rejects unrelated tag-missing outputs and falls back to the local tag-aware emergency premise", async () => {
+    const taggedInput = {
+      language: "zh" as const,
+      selectedTags: [
+        { id: "underwater", label: "水下世界", isCustom: false },
+        { id: "thrilling", label: "紧张刺激", isCustom: false },
+        { id: "wanderer", label: "流浪者", isCustom: false },
+      ],
+    };
+
+    vi.mocked(generateStructuredJson)
+      .mockResolvedValueOnce({
+        premise:
+          "一名图书馆管理员在闭馆后发现书架会偷偷调换位置。等她找到最后一排时，昨天借走的那本书已经写好了她明天才会做出的选择。",
+      })
+      .mockResolvedValueOnce({
+        premise:
+          "一名夜班护士在旧城区照看一位拒绝说话的老人。可每到凌晨两点，病房里的收音机都会播出她从未经历过的回忆。",
+      });
+    vi.mocked(generateLlmText).mockResolvedValue(
+      "一名博物馆讲解员在新展厅里发现一幅尚未完成的肖像。当天夜里，画布上的眼神先一步认出了她。",
+    );
+
+    await expect(
+      generateStoryPremise(DEFAULT_SETTINGS.llm, taggedInput),
+    ).resolves.toEqual({
+      premise:
+        "一名流浪者来到沉在寂静海下的水下聚落，打算抢在局势彻底失控前先看清它的走向。可每往前一步，现场都像早有人替他安排好了下一步会撞见的东西。",
     });
   });
 });

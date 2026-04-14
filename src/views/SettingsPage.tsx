@@ -635,7 +635,7 @@ const SettingsPage = () => {
   }, [elevenlabs, elevenlabsDraft.apiKey, showVoiceLibrary]);
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="app-shell-page relative bg-background">
       <div className="fixed inset-0 pointer-events-none">
         <div
           className="absolute inset-0 opacity-[0.015]"

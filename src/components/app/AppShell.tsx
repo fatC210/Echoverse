@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, type CSSProperties } from "react";
 import EchoverseLogo from "@/components/EchoverseLogo";
 import { Button } from "@/components/ui/button";
 import { useSettingsStore } from "@/lib/store/settings-store";
@@ -22,7 +22,7 @@ function Navigation() {
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <button
           onClick={() => router.push("/")}
-          className="group flex items-center gap-1 rounded-xl px-2 py-1.5 transition-[background-color,transform] duration-200 hover:-translate-y-px hover:bg-accent/5"
+          className="group flex items-center gap-1 rounded-xl px-2 py-1.5"
         >
           <EchoverseLogo size={36} />
           <span className="font-serif text-xl font-bold text-accent">Echoverse</span>
@@ -71,7 +71,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Navigation />
-      <main className={hideNavigation ? undefined : "pt-14"}>{children}</main>
+      <main
+        className={hideNavigation ? undefined : "pt-14"}
+        style={
+          hideNavigation
+            ? undefined
+            : ({
+                "--app-shell-offset": "3.5rem",
+              } as CSSProperties)
+        }
+      >
+        {children}
+      </main>
     </>
   );
 }
