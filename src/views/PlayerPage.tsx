@@ -15,7 +15,11 @@ import { advanceStory, listStoryAssetMap } from "@/lib/engine/story-runtime";
 import { isElevenLabsVerified, listElevenLabsVoices, previewElevenLabsVoice } from "@/lib/services/elevenlabs";
 import type { AudioAsset, Segment, Story, VoiceOption } from "@/lib/types/echoverse";
 import { createId, formatDuration } from "@/lib/utils/echoverse";
-import { splitNarrationForReveal } from "@/lib/utils/narration";
+import {
+  buildNarrationRevealThresholds,
+  getVisibleNarrationChunkCount,
+  splitNarrationForReveal,
+} from "@/lib/utils/narration";
 import {
   filterVoicesByGender,
   getEmptyVoiceFilterLabel,
@@ -77,13 +81,21 @@ function NarrationDisplay({
   isPlaying,
   isPaused,
   durationSec,
+  narrationStartAtSec,
+  getPlaybackTimeSec,
 }: {
   text: string;
   isPlaying: boolean;
   isPaused: boolean;
   durationSec: number;
+  narrationStartAtSec: number | null;
+  getPlaybackTimeSec: () => number | null;
 }) {
   const chunks = useMemo(() => splitNarrationForReveal(text), [text]);
+  const thresholds = useMemo(
+    () => buildNarrationRevealThresholds(chunks),
+    [chunks],
+  );
   const [visibleChunks, setVisibleChunks] = useState(chunks.length);
   const previousTextRef = useRef(text);
   const previousIsPlayingRef = useRef(isPlaying);
@@ -121,6 +133,29 @@ function NarrationDisplay({
       return;
     }
 
+    if (narrationStartAtSec !== null && durationSec > 0) {
+      let frameId = 0;
+
+      const syncWithAudioClock = () => {
+        const currentTimeSec = getPlaybackTimeSec();
+        const elapsedSec =
+          currentTimeSec === null ? 0 : Math.max(currentTimeSec - narrationStartAtSec, 0);
+        const progress = Math.min(elapsedSec / durationSec, 1);
+        const nextVisibleChunks = getVisibleNarrationChunkCount(thresholds, progress);
+
+        setVisibleChunks((current) =>
+          current === nextVisibleChunks ? current : nextVisibleChunks,
+        );
+
+        if (progress < 1) {
+          frameId = window.requestAnimationFrame(syncWithAudioClock);
+        }
+      };
+
+      frameId = window.requestAnimationFrame(syncWithAudioClock);
+      return () => window.cancelAnimationFrame(frameId);
+    }
+
     const totalDurationMs = Math.max(durationSec * 1000, chunks.length * 150, 2500);
     const stepMs = Math.max(60, Math.floor(totalDurationMs / Math.max(chunks.length, 1)));
     const interval = window.setInterval(() => {
@@ -134,7 +169,15 @@ function NarrationDisplay({
     }, stepMs);
 
     return () => window.clearInterval(interval);
-  }, [chunks, durationSec, isPaused, isPlaying]);
+  }, [
+    chunks.length,
+    durationSec,
+    getPlaybackTimeSec,
+    isPaused,
+    isPlaying,
+    narrationStartAtSec,
+    thresholds,
+  ]);
 
   return (
     <div className="mx-auto w-full max-w-2xl px-6 pb-0">
@@ -405,6 +448,40 @@ function LoadingOverlay({ open, lines, error, onRetry }: { open: boolean; lines:
   );
 }
 
+function hasSegmentPlaybackAssets(segment: Segment, assets: Record<string, AudioAsset>) {
+  if (!segment.resolvedAudio) {
+    return true;
+  }
+
+  const narrationRefs = segment.resolvedAudio.narrationCues?.length
+    ? segment.resolvedAudio.narrationCues.map((cue) => cue.assetId)
+    : segment.resolvedAudio.narrationAssetId
+      ? [segment.resolvedAudio.narrationAssetId]
+      : [];
+
+  const hasNarrationAssets =
+    segment.audioStatus.tts !== "ready" ||
+    (narrationRefs.length > 0 && narrationRefs.every((assetId) => Boolean(assets[assetId])));
+
+  const hasSfxAssets = segment.audioStatus.sfx.every((status, index) => {
+    if (status !== "ready") {
+      return true;
+    }
+
+    const assetId = segment.resolvedAudio?.sfxAssetIds[index];
+    return Boolean(assetId && assets[assetId]);
+  });
+
+  const hasMusicAsset =
+    segment.audioStatus.music !== "ready" ||
+    Boolean(
+      segment.resolvedAudio.musicAssetId &&
+        assets[segment.resolvedAudio.musicAssetId],
+    );
+
+  return hasNarrationAssets && hasSfxAssets && hasMusicAsset;
+}
+
 function StoryEndScreen({
   story,
   segments,
@@ -493,6 +570,7 @@ export default function PlayerPage() {
   const playbackSessionRef = useRef(0);
   const pausedSegmentAdvanceRef = useRef<string | null>(null);
   const lastAutoplayedSegmentRef = useRef<string | null>(null);
+  const autoplayAttemptRef = useRef<{ segmentId: string; sessionId: number } | null>(null);
   const isAdvancingStoryRef = useRef(false);
   const isPausedRef = useRef(false);
   const worldPanelRef = useRef<HTMLDivElement | null>(null);
@@ -506,6 +584,7 @@ export default function PlayerPage() {
   const [isNarrationPlaying, setIsNarrationPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [narrationDuration, setNarrationDuration] = useState(0);
+  const [narrationStartAtSec, setNarrationStartAtSec] = useState<number | null>(null);
   const [showChoices, setShowChoices] = useState(false);
   const [showEndScreen, setShowEndScreen] = useState(isSummaryView);
   const [loadingLines, setLoadingLines] = useState<string[]>([]);
@@ -539,6 +618,8 @@ export default function PlayerPage() {
 
     const loadedSegments = await listSegmentsByStory(storyId);
     const loadedAssets = await listStoryAssetMap(storyId);
+    lastAutoplayedSegmentRef.current = null;
+    autoplayAttemptRef.current = null;
     setStory(loadedStory);
     setSegments(loadedSegments);
     setAssetMap(loadedAssets);
@@ -555,6 +636,7 @@ export default function PlayerPage() {
       music: nextMuted.music ? 0 : nextVolumes.music,
     });
   }, [mixer, mutedLayers]);
+  const getPlaybackTimeSec = useCallback(() => mixer.getCurrentTime(), [mixer]);
 
   const generateSegment = async (
     options?: Parameters<typeof advanceStory>[2],
@@ -571,6 +653,8 @@ export default function PlayerPage() {
     setIsPaused(false);
     isPausedRef.current = false;
     setIsNarrationPlaying(false);
+    setNarrationStartAtSec(null);
+    setNarrationDuration(0);
     playbackSessionRef.current += 1;
     pausedSegmentAdvanceRef.current = null;
     mixer.stopAll();
@@ -865,9 +949,14 @@ export default function PlayerPage() {
     let cancelled = false;
     const sessionId = playbackSessionRef.current + 1;
     playbackSessionRef.current = sessionId;
+    let completionTimeout: number | null = null;
 
     const playCurrentSegment = async () => {
-      if (!currentSegment || !currentSegment.resolvedAudio || showEndScreen) {
+      if (!currentSegment || showEndScreen) {
+        return;
+      }
+
+      if (!hasSegmentPlaybackAssets(currentSegment, assetMap)) {
         return;
       }
 
@@ -875,22 +964,141 @@ export default function PlayerPage() {
         return;
       }
 
-      lastAutoplayedSegmentRef.current = currentSegment.id;
+      if (autoplayAttemptRef.current?.segmentId === currentSegment.id) {
+        return;
+      }
+
+      autoplayAttemptRef.current = {
+        segmentId: currentSegment.id,
+        sessionId,
+      };
       pausedSegmentAdvanceRef.current = null;
       setShowChoices(false);
       setIsPaused(false);
       isPausedRef.current = false;
       setIsNarrationPlaying(true);
+      setNarrationStartAtSec(null);
+      setNarrationDuration(0);
       mixer.stopAll();
-      const result = await mixer.playSegment(currentSegment, assetMap);
-      if (cancelled || playbackSessionRef.current !== sessionId) {
-        return;
-      }
+      const playbackStartedAtMs = Date.now();
+      const estimatedNarrationDurationSec = Math.max(
+        currentSegment.audioScript.narration.text.length / 18,
+        6,
+      );
+      const playbackStartTimeoutMs = 5000;
 
-      setNarrationDuration(result.narrationDurationSec || Math.max(currentSegment.audioScript.narration.text.length / 18, 6));
-      await result.completion;
-      if (cancelled || playbackSessionRef.current !== sessionId) {
-        return;
+      try {
+        const result = currentSegment.resolvedAudio
+          ? await Promise.race([
+              mixer.playSegment(currentSegment, assetMap),
+              new Promise<Awaited<ReturnType<typeof mixer.playSegment>>>((_, reject) => {
+                completionTimeout = window.setTimeout(() => {
+                  reject(new Error("Segment playback start timed out"));
+                }, playbackStartTimeoutMs);
+              }),
+            ])
+          : {
+              narrationDurationSec: 0,
+              completion: Promise.resolve(),
+            };
+        if (completionTimeout !== null) {
+          window.clearTimeout(completionTimeout);
+          completionTimeout = null;
+        }
+        if (cancelled || playbackSessionRef.current !== sessionId) {
+          return;
+        }
+
+        lastAutoplayedSegmentRef.current = currentSegment.id;
+        if (autoplayAttemptRef.current?.sessionId === sessionId) {
+          autoplayAttemptRef.current = null;
+        }
+
+        const narrationDurationSec =
+          result.narrationDurationSec || estimatedNarrationDurationSec;
+        const hasNarrationAudio = Boolean(
+          result.narrationDurationSec > 0 ||
+            currentSegment.resolvedAudio?.narrationCues?.some(
+              (cue) => assetMap[cue.assetId],
+            ) ||
+            (currentSegment.resolvedAudio?.narrationAssetId &&
+              assetMap[currentSegment.resolvedAudio.narrationAssetId]),
+        );
+
+        setNarrationDuration(narrationDurationSec);
+        setNarrationStartAtSec(result.narrationStartAtSec);
+
+        if (!hasNarrationAudio) {
+          await new Promise<void>((resolve) => {
+            completionTimeout = window.setTimeout(
+              resolve,
+              Math.max(narrationDurationSec * 1000, 2500),
+            );
+          });
+        } else {
+          await new Promise<void>((resolve, reject) => {
+            completionTimeout = window.setTimeout(() => {
+              console.warn(
+                "Narration completion timed out; continuing to choices with duration fallback.",
+                { segmentId: currentSegment.id },
+              );
+              resolve();
+            }, Math.max(narrationDurationSec * 1000 + 1500, 2500));
+
+            result.completion.then(
+              () => {
+                if (completionTimeout !== null) {
+                  window.clearTimeout(completionTimeout);
+                  completionTimeout = null;
+                }
+                resolve();
+              },
+              (error) => {
+                if (completionTimeout !== null) {
+                  window.clearTimeout(completionTimeout);
+                  completionTimeout = null;
+                }
+                reject(error);
+              },
+            );
+          });
+        }
+        if (cancelled || playbackSessionRef.current !== sessionId) {
+          return;
+        }
+      } catch (error) {
+        console.error("Segment playback failed; continuing with duration fallback.", error);
+        if (cancelled || playbackSessionRef.current !== sessionId) {
+          return;
+        }
+        setNarrationDuration(estimatedNarrationDurationSec);
+        setNarrationStartAtSec(null);
+        mixer.stopAll();
+        lastAutoplayedSegmentRef.current = currentSegment.id;
+        if (autoplayAttemptRef.current?.sessionId === sessionId) {
+          autoplayAttemptRef.current = null;
+        }
+
+        const elapsedMs = Date.now() - playbackStartedAtMs;
+        const remainingMs = Math.max(
+          estimatedNarrationDurationSec * 1000 - elapsedMs,
+          0,
+        );
+
+        await new Promise<void>((resolve) => {
+          completionTimeout = window.setTimeout(
+            resolve,
+            Math.max(remainingMs, 250),
+          );
+        });
+        if (cancelled || playbackSessionRef.current !== sessionId) {
+          return;
+        }
+      } finally {
+        if (completionTimeout !== null) {
+          window.clearTimeout(completionTimeout);
+          completionTimeout = null;
+        }
       }
 
       setIsNarrationPlaying(false);
@@ -912,8 +1120,14 @@ export default function PlayerPage() {
     void playCurrentSegment();
     return () => {
       cancelled = true;
+      if (completionTimeout !== null) {
+        window.clearTimeout(completionTimeout);
+      }
       if (playbackSessionRef.current === sessionId) {
         playbackSessionRef.current += 1;
+      }
+      if (autoplayAttemptRef.current?.sessionId === sessionId) {
+        autoplayAttemptRef.current = null;
       }
       pausedSegmentAdvanceRef.current = null;
       isPausedRef.current = false;
@@ -1052,30 +1266,33 @@ export default function PlayerPage() {
                     {filteredVoices.length ? (
                       <div className="max-h-64 space-y-2 overflow-y-auto">
                         {filteredVoices.map((voiceOption) => (
-                          <button
+                          <div
                             key={voiceOption.voice_id}
-                            onClick={() =>
-                              settings.updateVoice({
-                                voiceId: voiceOption.voice_id,
-                                voiceName: voiceOption.name,
-                                voiceDescription: "",
-                              })
-                            }
-                            className={`w-full rounded-lg border p-3 text-left text-sm ${
+                            className={`w-full rounded-lg border p-3 text-sm ${
                               settings.voice.voiceId === voiceOption.voice_id
                                 ? "border-accent/40 bg-accent/10 text-accent"
                                 : "hover-surface border-border/40 text-muted-foreground"
                             }`}
                           >
-                            <div className="flex items-center justify-between">
-                              <div>
+                            <div className="flex items-center justify-between gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  settings.updateVoice({
+                                    voiceId: voiceOption.voice_id,
+                                    voiceName: voiceOption.name,
+                                    voiceDescription: "",
+                                  })
+                                }
+                                className="min-w-0 flex-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+                              >
                                 <p className="font-medium">
                                   {getVoiceOptionDisplayName(voiceOption, lang)}
                                 </p>
-                              </div>
+                              </button>
                               <button
-                                onClick={(event) => {
-                                  event.stopPropagation();
+                                type="button"
+                                onClick={() => {
                                   void handleVoicePreview(voiceOption.voice_id);
                                 }}
                                 className="rounded-full p-1 text-muted-foreground hover:bg-accent/10 hover:text-accent"
@@ -1087,7 +1304,7 @@ export default function PlayerPage() {
                                 )}
                               </button>
                             </div>
-                          </button>
+                          </div>
                         ))}
                       </div>
                     ) : (
@@ -1148,6 +1365,8 @@ export default function PlayerPage() {
             isPlaying={isNarrationPlaying}
             isPaused={isPaused}
             durationSec={narrationDuration}
+            narrationStartAtSec={narrationStartAtSec}
+            getPlaybackTimeSec={getPlaybackTimeSec}
           />
         </div>
         {isPaused ? (

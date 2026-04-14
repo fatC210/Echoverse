@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildNarrationRevealThresholds,
+  estimateNarrationChunkWeight,
   getNarrationAssetIds,
   getNarrationDurationSec,
+  getVisibleNarrationChunkCount,
   splitNarrationForReveal,
 } from "./narration";
 
@@ -26,6 +29,18 @@ describe("splitNarrationForReveal", () => {
 
   it("returns no chunks for empty narration", () => {
     expect(splitNarrationForReveal("   ")).toEqual([]);
+  });
+
+  it("holds punctuation-bearing chunks slightly longer during reveal", () => {
+    const chunks = ["Wait, ", "don't ", "go."];
+    const thresholds = buildNarrationRevealThresholds(chunks);
+
+    expect(estimateNarrationChunkWeight(chunks[0])).toBeGreaterThan(
+      estimateNarrationChunkWeight("Wait "),
+    );
+    expect(getVisibleNarrationChunkCount(thresholds, 0.2)).toBe(1);
+    expect(getVisibleNarrationChunkCount(thresholds, 0.55)).toBe(2);
+    expect(getVisibleNarrationChunkCount(thresholds, 1)).toBe(3);
   });
 
   it("prefers narration cue assets when a segment uses multiple dialogue voices", () => {

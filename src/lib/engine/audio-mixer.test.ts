@@ -167,4 +167,13 @@ describe("AudioMixer", () => {
 
     expect(musicGain.gain.value).toBeCloseTo(0.6);
   });
+
+  it("exposes the audio context clock for sync consumers", async () => {
+    const { getAudioMixer } = await import("./audio-mixer");
+    const mixer = getAudioMixer();
+
+    await mixer.resume();
+
+    expect(mixer.getCurrentTime()).toBe(12);
+  });
 });

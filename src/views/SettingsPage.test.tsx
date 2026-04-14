@@ -131,6 +131,18 @@ describe("SettingsPage", () => {
     });
   });
 
+  it("renders user preferences before the service configuration sections", () => {
+    const { container } = render(<SettingsPage />);
+    const sectionTitles = Array.from(container.querySelectorAll("section h2")).map((node) =>
+      node.textContent?.trim(),
+    );
+
+    expect(sectionTitles[0]).toBe("User Preferences");
+    expect(sectionTitles).toContain("LLM");
+    expect(sectionTitles).toContain("ElevenLabs");
+    expect(sectionTitles).toContain("turbopuffer");
+  });
+
   it("selects the first voice when the voice library loads without a saved default", async () => {
     useSettingsStore.setState({
       ...useSettingsStore.getState(),

@@ -7,6 +7,12 @@ export interface MixerVolumes {
   music: number;
 }
 
+export interface SegmentPlaybackResult {
+  narrationDurationSec: number;
+  narrationStartAtSec: number | null;
+  completion: Promise<void>;
+}
+
 class AudioMixer {
   private context: AudioContext | null = null;
   private masterGain: GainNode | null = null;
@@ -16,6 +22,7 @@ class AudioMixer {
   private currentMusicSource: AudioBufferSourceNode | null = null;
   private activeSources = new Set<AudioBufferSourceNode>();
   private currentMusicMixFactor = 1;
+  private playbackGeneration = 0;
   private volumes: MixerVolumes = {
     master: 1,
     narration: 1,
@@ -112,7 +119,13 @@ class AudioMixer {
     }
   }
 
+  getCurrentTime() {
+    return this.context?.currentTime ?? null;
+  }
+
   stopAll() {
+    this.playbackGeneration += 1;
+
     for (const source of this.activeSources) {
       try {
         source.stop();
@@ -127,11 +140,14 @@ class AudioMixer {
   }
 
   async playSegment(segment: Segment, assets: Record<string, AudioAsset>) {
+    const playbackGeneration = this.playbackGeneration + 1;
+    this.playbackGeneration = playbackGeneration;
     const context = await this.ensureContext();
 
-    if (!context || !segment.resolvedAudio) {
+    if (!context || !segment.resolvedAudio || playbackGeneration !== this.playbackGeneration) {
       return {
         narrationDurationSec: 0,
+        narrationStartAtSec: null,
         completion: Promise.resolve(),
       };
     }
@@ -171,6 +187,13 @@ class AudioMixer {
         this.currentMusicMixFactor = this.getSegmentMusicMixFactor(segment);
         const targetMusicVolume = this.getSegmentMusicVolume(segment);
         const buffer = await this.decodeAudio(musicAsset.audioBlob);
+        if (playbackGeneration !== this.playbackGeneration) {
+          return {
+            narrationDurationSec: 0,
+            narrationStartAtSec: null,
+            completion: Promise.resolve(),
+          };
+        }
         const source = context.createBufferSource();
         source.buffer = buffer;
         source.loop = false;
@@ -213,6 +236,13 @@ class AudioMixer {
       }
 
       const buffer = await this.decodeAudio(asset.audioBlob);
+      if (playbackGeneration !== this.playbackGeneration) {
+        return {
+          narrationDurationSec: 0,
+          narrationStartAtSec: null,
+          completion: Promise.resolve(),
+        };
+      }
       const source = context.createBufferSource();
       const gain = context.createGain();
       source.buffer = buffer;
@@ -248,6 +278,13 @@ class AudioMixer {
                 },
               ]
             : [];
+      if (playbackGeneration !== this.playbackGeneration) {
+        return {
+          narrationDurationSec: 0,
+          narrationStartAtSec: null,
+          completion: Promise.resolve(),
+        };
+      }
 
       narrationDurationSec = scheduledNarration.reduce(
         (totalDuration, item) => totalDuration + item.buffer.duration,
@@ -297,6 +334,10 @@ class AudioMixer {
 
     return {
       narrationDurationSec,
+      narrationStartAtSec:
+        narrationDurationSec > 0 && (narrationCueAssets.length > 0 || narrationAsset)
+          ? narrationStartAt
+          : null,
       completion: narrationPromise,
     };
   }

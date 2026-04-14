@@ -667,6 +667,59 @@ const SettingsPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-6"
         >
+          <section className="glass-panel-strong p-6 space-y-4">
+            <h2 className="text-lg font-semibold font-serif">
+              {t("settings.preferences", lang)}
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase mb-2 block">
+                  {t("settings.interfaceLang", lang)}
+                </label>
+                <div className="flex gap-2">
+                  {(["en", "zh"] as const).map((value) => (
+                    <Button
+                      key={value}
+                      variant={preferences.interfaceLang === value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => updatePreferences({ interfaceLang: value })}
+                      className={
+                        preferences.interfaceLang === value
+                          ? "bg-accent text-accent-foreground"
+                          : "border-accent/30 hover:border-accent/60"
+                      }
+                    >
+                      {value === "en" ? "EN" : "ZH"}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase mb-2 block">
+                  {t("settings.storyLang", lang)}
+                </label>
+                <div className="flex gap-2">
+                  {(["en", "zh"] as const).map((value) => (
+                    <Button
+                      key={value}
+                      variant={preferences.storyLang === value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => updatePreferences({ storyLang: value })}
+                      className={
+                        preferences.storyLang === value
+                          ? "bg-accent text-accent-foreground"
+                          : "border-accent/30 hover:border-accent/60"
+                      }
+                    >
+                      {value === "en" ? "EN" : "ZH"}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
           <section
             className="glass-panel-strong p-6 space-y-4"
             onBlur={handleLlmSectionBlur}
@@ -932,59 +985,6 @@ const SettingsPage = () => {
                 {turbopufferError}
               </p>
             )}
-          </section>
-
-          <section className="glass-panel-strong p-6 space-y-4">
-            <h2 className="text-lg font-semibold font-serif">
-              {t("settings.preferences", lang)}
-            </h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase mb-2 block">
-                  {t("settings.interfaceLang", lang)}
-                </label>
-                <div className="flex gap-2">
-                  {(["en", "zh"] as const).map((value) => (
-                    <Button
-                      key={value}
-                      variant={preferences.interfaceLang === value ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => updatePreferences({ interfaceLang: value })}
-                      className={
-                        preferences.interfaceLang === value
-                          ? "bg-accent text-accent-foreground"
-                          : "border-accent/30 hover:border-accent/60"
-                      }
-                    >
-                      {value === "en" ? "EN" : "中文"}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs text-muted-foreground font-mono tracking-wider uppercase mb-2 block">
-                  {t("settings.storyLang", lang)}
-                </label>
-                <div className="flex gap-2">
-                  {(["en", "zh"] as const).map((value) => (
-                    <Button
-                      key={value}
-                      variant={preferences.storyLang === value ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => updatePreferences({ storyLang: value })}
-                      className={
-                        preferences.storyLang === value
-                          ? "bg-accent text-accent-foreground"
-                          : "border-accent/30 hover:border-accent/60"
-                      }
-                    >
-                      {value === "en" ? "EN" : "中文"}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </div>
           </section>
 
           <section className="glass-panel-strong p-6 border-destructive/20">

@@ -5,15 +5,15 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { t } from "@/lib/i18n";
 import { useSettingsStore } from "@/lib/store/settings-store";
-import { STORY_TAGS, type TagCategory } from "@/lib/constants/story-tags";
+import { STORY_TAGS, getStoryTagLabel, isPresetStoryTag, type TagCategory } from "@/lib/constants/story-tags";
 import { DURATION_OPTIONS } from "@/lib/constants/defaults";
 import { listCustomTags } from "@/lib/db";
+import { generateStoryPremise } from "@/lib/engine/premise-generator";
 import { advanceStory, createStoryExperience } from "@/lib/engine/story-runtime";
-import { generateStructuredJson, LlmRequestError } from "@/lib/services/llm";
-import { extractGeneratedPremise, isMeaningfulPremise } from "@/lib/utils/premise";
+import { LlmRequestError } from "@/lib/services/llm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, X, Loader2, ChevronDown, ChevronUp, Wand2, Globe, Heart, Users, PenLine, Settings } from "lucide-react";
+import { ArrowLeft, X, Loader2, Wand2, Globe, Heart, Users, PenLine, Settings } from "lucide-react";
 import { toast } from "sonner";
 
 const TAG_ICONS: Record<string, React.ReactNode> = {
@@ -24,20 +24,6 @@ const TAG_ICONS: Record<string, React.ReactNode> = {
 
 function hasSameItems(left: string[], right: string[]) {
   return left.length === right.length && left.every((item, index) => item === right[index]);
-}
-
-interface PremiseSuggestion {
-  premise?: unknown;
-  storyPremise?: unknown;
-  story_premise?: unknown;
-  text?: unknown;
-  content?: unknown;
-  response?: unknown;
-  output?: unknown;
-  result?: unknown;
-  data?: unknown;
-  message?: unknown;
-  answer?: unknown;
 }
 
 function isLikelyLlmConfigurationError(error: unknown) {
@@ -94,7 +80,6 @@ const CreateStoryPage = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customInput, setCustomInput] = useState("");
   const [duration, setDuration] = useState<"short" | "medium" | "long">("medium");
-  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -141,10 +126,6 @@ const CreateStoryPage = () => {
 
   const allSelected = selectedTags;
 
-  const toggleCategory = (cat: string) => {
-    setExpandedCategories((prev) => ({ ...prev, [cat]: !prev[cat] }));
-  };
-
   const generatePremiseSuggestion = async () => {
     if (!llmConfig.apiKey) {
       toast.error(t("create.premise.noApiKey", lang));
@@ -154,6 +135,19 @@ const CreateStoryPage = () => {
     setIsGenerating(true);
 
     try {
+      const result = await generateStoryPremise(llmConfig, {
+        language: lang,
+        selectedTags: allSelected.map((tag) => ({
+          id: tag,
+          label: getStoryTagLabel(tag, lang),
+          isCustom: !isPresetStoryTag(tag),
+        })),
+      });
+
+      setPremise(result.premise);
+      return;
+
+      /*
       const tagLabels = allSelected.map((tag) => {
         for (const cat of Object.values(STORY_TAGS)) {
           const found = cat.options.find((o) => o.id === tag);
@@ -206,18 +200,18 @@ const CreateStoryPage = () => {
           : "- The user selected no tags. You must randomly choose the genre, atmosphere, protagonist type, and central conflict yourself\n- Aim for a fresh combination each time; do not fall back to a stock default premise or keep repeating the same familiar tropes";
       const firstAttemptInstruction = lang === "zh"
         ? hasElements
-          ? `请参考这些标签生成一个可直接展示给用户的完整故事前提：${elementsStr}`
-          : "用户没有选择任何标签。请随机生成一个原创、完整、具体、可直接展示给用户的故事前提，并自行决定题材、主角与核心冲突。"
+          ? `请参考这些标签，直接写出一个可展示给用户的故事前提成品：${elementsStr}。不要复述请求，不要列规则。`
+          : "用户没有选择任何标签。请随机生成一个原创、完整、具体、可直接展示给用户的故事前提成品，并自行决定题材、主角与核心冲突；不要复述请求，不要列规则。"
         : hasElements
-          ? `Generate one complete story premise that can be shown directly to the user and actively reflect these tags: ${elementsStr}.`
-          : "The user selected no tags. Randomly generate one original, complete story premise that can be shown directly to the user, and choose the genre, protagonist, and core conflict yourself.";
+          ? `Generate one complete story premise that can be shown directly to the user and actively reflect these tags: ${elementsStr}. Write the premise itself, not the request or the rules.`
+          : "The user selected no tags. Randomly generate one original, complete story premise that can be shown directly to the user, and choose the genre, protagonist, and core conflict yourself. Write the premise itself, not the request or the rules.";
       const retryInstruction = lang === "zh"
         ? hasElements
-          ? `上一个结果无效。请重新生成一个完整、具体、可直接展示给用户的故事前提，并继续认真参考这些标签：${elementsStr}；不要使用省略号、占位词或模板句。`
-          : "上一个结果无效。用户没有选择任何标签。请重新随机生成一个完整、具体、可直接展示给用户的原创故事前提；不要使用省略号、占位词或模板句，也不要回到常见模板。"
+          ? `上一个结果无效，因为它像说明文字而不是故事前提。请重新生成一个完整、具体、可直接展示给用户的故事前提，并继续认真参考这些标签：${elementsStr}；不要复述请求、列规则、解释标签，也不要使用省略号、占位词或模板句。`
+          : "上一个结果无效，因为它像说明文字而不是故事前提。用户没有选择任何标签。请重新随机生成一个完整、具体、可直接展示给用户的原创故事前提；不要复述请求、列规则、使用省略号、占位词或模板句，也不要回到常见模板。"
         : hasElements
-          ? `The previous result was invalid. Generate a complete, specific story premise that can be shown directly to the user and still actively reflect these tags: ${elementsStr}; do not use ellipses, placeholders, or template lines.`
-          : "The previous result was invalid. The user selected no tags. Randomly generate a complete, specific, original story premise that can be shown directly to the user; do not use ellipses, placeholders, template lines, or default stock concepts.";
+          ? `The previous result was invalid because it read like instructions instead of a story premise. Generate a complete, specific story premise that can be shown directly to the user and still actively reflect these tags: ${elementsStr}; do not restate the request, list rules, explain the tags, or use ellipses, placeholders, or template lines.`
+          : "The previous result was invalid because it read like instructions instead of a story premise. The user selected no tags. Randomly generate a complete, specific, original story premise that can be shown directly to the user; do not restate the request, list rules, use ellipses, placeholders, template lines, or default stock concepts.";
 
       const systemPrompt = lang === "zh"
         ? `你是一个专门写“故事前提”的互动叙事策划师。
@@ -228,44 +222,55 @@ const CreateStoryPage = () => {
 - 第一时间建立主角、处境或目标
 ${hookRequirement}
 - 给后续剧情留下很大展开空间
-- 语言要像会直接展示给用户看的成品文案
-- 不要输出省略号占位、模板句、标题、说明、要点、分析、括号备注、编号
+- 有故事标签时，需要使用标签来构建故事前提；没有标签时，需要自行随机决定题材、氛围、主角身份和核心冲突
 ${toneGuidance}
 ${tagGuidance}
 
 输出格式：
-只返回 JSON 对象，例如：
-{"premise":"暴雨切断山路后，一名临时代班的深夜电台主持人开始接到只在凌晨三点响起的来电。对方总能提前说中小镇第二天会发生的事，而最后一次通话里传来的，是她自己的声音。"}`
-        : `You are an interactive fiction concept writer who only writes story premises.
+直接输出故事前提，不要任何额外说明。
+示例：
+暴雨切断山路后，一名临时代班的深夜电台主持人开始接到只在凌晨三点响起的来电。对方总能提前说中小镇第二天会发生的事，而最后一次通话里传来的，是她自己的声音。`
+        : `You are an interactive fiction concept writer who specializes in writing "story premises."
 
 Hard requirements:
-- Write only one story premise, not an outline, not analysis, not worldbuilding notes
+- Write only one "story premise", not an outline, not worldbuilding notes, not analysis
 - 2 to 3 sentences
 - Immediately establish protagonist, situation, or goal
 ${hookRequirement}
 - Leave substantial room for later story development
-- Read like polished copy that can be shown directly to the user
-- Do not output placeholder ellipses, template lines, a title, explanation, bullet list, analysis, or commentary
+- When story tags are provided, use them to build the story premise; when no tags are provided, randomly decide the genre, atmosphere, protagonist identity, and central conflict yourself
 ${toneGuidance}
 ${tagGuidance}
 
 Output format:
-Return only a JSON object, for example:
-{"premise":"A substitute host at a late-night radio station keeps receiving calls that describe tomorrow's events before they happen. On the fourth night, the caller stops predicting the town's future and starts warning her about her own missing memories."}`;
+Directly output the story premise. Do not include any extra explanation.
+Example:
+A substitute host at a late-night radio station keeps receiving calls that describe tomorrow's events before they happen. On the fourth night, the caller stops predicting the town's future and starts warning her about her own missing memories.`;
 
-      for (let attempt = 0; attempt < 2; attempt += 1) {
-        const result = await generateStructuredJson<PremiseSuggestion>(
+      const finalRetryInstruction = lang === "zh"
+        ? hasElements
+          ? `上一个结果仍然无效。忽略你之前的回答，重新写一个可直接展示给用户的故事前提，并继续认真参考这些标签：${elementsStr}。这次只输出故事前提正文本身，精确写成 2 到 3 句话，不要任何前缀、标签、解释或格式说明。`
+          : "上一个结果仍然无效。忽略你之前的回答，重新随机写一个可直接展示给用户的原创故事前提。这次只输出故事前提正文本身，精确写成 2 到 3 句话，不要任何前缀、标签、解释或格式说明。"
+        : hasElements
+          ? `The previous result was still invalid. Ignore your earlier reply and write a fresh story premise that can be shown directly to the user while still actively reflecting these tags: ${elementsStr}. This time output only the premise itself in exactly 2 to 3 sentences, with no label, tags, explanation, or formatting notes.`
+          : "The previous result was still invalid. Ignore your earlier reply and write a fresh original story premise that can be shown directly to the user. This time output only the premise itself in exactly 2 to 3 sentences, with no label, tags, explanation, or formatting notes.";
+
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+          { role: "system", content: systemPrompt },
+        ];
+
+        messages.push({
+          role: "user",
+          content: attempt === 0 ? firstAttemptInstruction : attempt === 1 ? retryInstruction : finalRetryInstruction,
+        });
+
+        const result = await generateLlmText(
           llmConfig,
-          [
-            { role: "system", content: systemPrompt },
-            {
-              role: "user",
-              content: attempt === 0 ? firstAttemptInstruction : retryInstruction,
-            },
-          ],
+          messages,
           {
             max_tokens: 260,
-            temperature: hasElements ? 0.85 : 1,
+            temperature: attempt === 0 ? (hasElements ? 0.85 : 1) : attempt === 1 ? (hasElements ? 0.75 : 0.9) : 0.65,
           },
         );
 
@@ -276,7 +281,9 @@ Return only a JSON object, for example:
           return;
         }
       }
+
       throw new Error("Premise was invalid");
+      */
     } catch (error) {
       console.error(error);
       toast.error(getPremiseGenerationErrorMessage(error, lang));
@@ -308,12 +315,8 @@ Return only a JSON object, for example:
         },
         {
           premise: actualPremise,
-          selectedPresetTags: selectedTags.filter((tag) =>
-            Object.values(STORY_TAGS).some((category) => category.options.some((option) => option.id === tag)),
-          ),
-          selectedCustomTags: selectedTags.filter((tag) =>
-            !Object.values(STORY_TAGS).some((category) => category.options.some((option) => option.id === tag)),
-          ),
+          selectedPresetTags: selectedTags.filter((tag) => isPresetStoryTag(tag)),
+          selectedCustomTags: selectedTags.filter((tag) => !isPresetStoryTag(tag)),
           storyLanguage: useSettingsStore.getState().preferences.storyLang,
           duration,
         },
@@ -470,23 +473,15 @@ Return only a JSON object, for example:
 
             {(Object.keys(STORY_TAGS) as TagCategory[]).map((category) => {
               const cat = STORY_TAGS[category];
-              const isExpanded = expandedCategories[category];
-              const visibleOptions = isExpanded ? cat.options : cat.options.slice(0, 7);
 
               return (
                 <div key={category} className="space-y-2">
-                  <button
-                    onClick={() => toggleCategory(category)}
-                    className="hover-surface flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium text-muted-foreground"
-                  >
+                  <div className="flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium text-muted-foreground">
                     {TAG_ICONS[category] || <Globe size={14} />}
                     <span>{cat.label[lang]}</span>
-                    {cat.options.length > 7 && (
-                      isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />
-                    )}
-                  </button>
+                  </div>
                   <div className="flex flex-wrap gap-2">
-                    {visibleOptions.map((option) => (
+                    {cat.options.map((option) => (
                       <button
                         key={option.id}
                         onClick={() => toggleTag(option.id)}

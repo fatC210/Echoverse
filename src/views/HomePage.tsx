@@ -52,6 +52,10 @@ const seededValue = (seed: number) => {
   return value - Math.floor(value);
 };
 
+const formatPercent = (value: number) => `${value.toFixed(4)}%`;
+
+const formatPixels = (value: number) => `${value.toFixed(4)}px`;
+
 const getEdgePosition = (seed: number) => {
   for (let attempt = 0; attempt < 10; attempt += 1) {
     const x = seededValue(seed + attempt * 2 + 1) * 100;
@@ -127,7 +131,7 @@ const pulsingDots: PulsingDotConfig[] = Array.from({ length: 15 }, (_, i) => {
 const FloatingParticle = ({ delay, x, y, size, duration, driftX, driftY, peakOpacity }: FloatingParticleConfig) => (
   <motion.div
     className="absolute rounded-full bg-accent"
-    style={{ left: `${x}%`, top: `${y}%`, width: size, height: size }}
+    style={{ left: formatPercent(x), top: formatPercent(y), width: formatPixels(size), height: formatPixels(size) }}
     animate={{
       y: [0, driftY, 0],
       x: [0, driftX, 0],
@@ -143,9 +147,9 @@ const GlowOrb = ({ delay, x, y, size, driftX, driftY, duration }: GlowOrbConfig)
   <motion.div
     className="absolute rounded-full bg-accent/20"
     style={{
-      left: `${x}%`, top: `${y}%`, width: size, height: size,
-      filter: `blur(${size / 3}px)`,
-      boxShadow: `0 0 ${size}px ${size / 3}px hsl(var(--accent) / 0.15)`,
+      left: formatPercent(x), top: formatPercent(y), width: formatPixels(size), height: formatPixels(size),
+      filter: `blur(${formatPixels(size / 3)})`,
+      boxShadow: `0 0 ${formatPixels(size)} ${formatPixels(size / 3)} hsl(var(--accent) / 0.15)`,
     }}
     animate={{
       x: [0, driftX, 0],
@@ -161,7 +165,7 @@ const GlowOrb = ({ delay, x, y, size, driftX, driftY, duration }: GlowOrbConfig)
 const ShootingStar = ({ delay, startX, startY, repeatDelay }: ShootingStarConfig) => (
   <motion.div
     className="absolute"
-    style={{ left: `${startX}%`, top: `${startY}%` }}
+    style={{ left: formatPercent(startX), top: formatPercent(startY) }}
     initial={{ opacity: 0 }}
     animate={{
       x: [0, 200],
@@ -188,13 +192,13 @@ const ShootingStar = ({ delay, startX, startY, repeatDelay }: ShootingStarConfig
 const PulsingDot = ({ x, y, delay, size, duration }: PulsingDotConfig) => (
   <motion.div
     className="absolute rounded-full bg-accent"
-    style={{ left: `${x}%`, top: `${y}%`, width: size, height: size }}
+    style={{ left: formatPercent(x), top: formatPercent(y), width: formatPixels(size), height: formatPixels(size) }}
     animate={{
       opacity: [0.1, 0.6, 0.1],
       scale: [1, 1.8, 1],
       boxShadow: [
         `0 0 0px 0px hsl(var(--accent) / 0)`,
-        `0 0 ${size * 4}px ${size * 2}px hsl(var(--accent) / 0.15)`,
+        `0 0 ${formatPixels(size * 4)} ${formatPixels(size * 2)} hsl(var(--accent) / 0.15)`,
         `0 0 0px 0px hsl(var(--accent) / 0)`,
       ],
     }}

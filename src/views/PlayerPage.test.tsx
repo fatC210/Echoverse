@@ -13,6 +13,7 @@ const pauseMock = vi.fn();
 const resumeMock = vi.fn();
 const stopAllMock = vi.fn();
 const setVolumesMock = vi.fn();
+const getCurrentTimeMock = vi.fn(() => 0);
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -75,6 +76,7 @@ vi.mock("@/lib/engine/story-runtime", () => ({
 
 vi.mock("@/lib/engine/audio-mixer", () => ({
   getAudioMixer: () => ({
+    getCurrentTime: getCurrentTimeMock,
     pause: pauseMock,
     playSegment: playSegmentMock,
     resume: resumeMock,
@@ -144,6 +146,19 @@ const baseSegment = {
   },
 } as never;
 
+const baseAssets = {
+  tts_1: {
+    id: "tts_1",
+    storyId: "story-1",
+    category: "tts",
+    description: "Narration",
+    audioBlob: new Blob(["audio"], { type: "audio/mpeg" }),
+    durationSec: 4,
+    createdAt: "2026-04-14T00:00:00.000Z",
+    timesUsed: 1,
+  },
+} as never;
+
 describe("PlayerPage", () => {
   beforeEach(() => {
     pushMock.mockReset();
@@ -152,18 +167,20 @@ describe("PlayerPage", () => {
     resumeMock.mockReset();
     stopAllMock.mockReset();
     setVolumesMock.mockReset();
+    getCurrentTimeMock.mockReset();
+    getCurrentTimeMock.mockReturnValue(0);
     window.localStorage.clear();
 
     vi.mocked(db.getStory).mockResolvedValue(baseStory);
     vi.mocked(db.listSegmentsByStory).mockResolvedValue([baseSegment]);
-    vi.mocked(storyRuntime.listStoryAssetMap).mockResolvedValue({});
+    vi.mocked(storyRuntime.listStoryAssetMap).mockResolvedValue(baseAssets);
     vi.mocked(storyRuntime.advanceStory).mockResolvedValue({
       story: baseStory,
       segment: {
         ...baseSegment,
         id: "segment-2",
       },
-      assets: {},
+      assets: baseAssets,
     } as never);
 
     useSettingsStore.setState({
@@ -229,6 +246,31 @@ describe("PlayerPage", () => {
     expect(playSegmentMock).toHaveBeenCalledTimes(1);
   });
 
+  it("retries autoplay cleanly when the page is mounted under strict mode", async () => {
+    playSegmentMock.mockResolvedValue({
+      narrationDurationSec: 1,
+      completion: Promise.resolve(),
+    });
+
+    await act(async () => {
+      render(
+        <React.StrictMode>
+          <PlayerPage />
+        </React.StrictMode>,
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(playSegmentMock).toHaveBeenCalled();
+    });
+
+    expect(
+      await screen.findByRole("button", { name: /open the door/i }),
+    ).toBeInTheDocument();
+  });
+
   it("auto-selects only once when the countdown expires", async () => {
     vi.useFakeTimers();
 
@@ -265,5 +307,105 @@ describe("PlayerPage", () => {
     });
 
     expect(storyRuntime.advanceStory).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows choices after the text reveal finishes even when narration audio is unavailable", async () => {
+    vi.useFakeTimers();
+
+    vi.mocked(db.listSegmentsByStory).mockResolvedValue([
+      {
+        ...baseSegment,
+        resolvedAudio: undefined,
+        audioStatus: {
+          ...baseSegment.audioStatus,
+          tts: "failed",
+        },
+      } as never,
+    ]);
+
+    await act(async () => {
+      render(<PlayerPage />);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(playSegmentMock).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole("button", { name: /open the door/i }),
+    ).not.toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(6_100);
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.getByRole("button", { name: /open the door/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("falls back to showing choices when narration completion never resolves", async () => {
+    vi.useFakeTimers();
+
+    playSegmentMock.mockResolvedValue({
+      narrationDurationSec: 1,
+      completion: new Promise<void>(() => {
+        // Simulate browsers occasionally missing the final completion callback.
+      }),
+    });
+
+    await act(async () => {
+      render(<PlayerPage />);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.queryByRole("button", { name: /open the door/i }),
+    ).not.toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(2_600);
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.getByRole("button", { name: /open the door/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("falls back to showing choices when segment playback never starts", async () => {
+    vi.useFakeTimers();
+
+    playSegmentMock.mockImplementation(
+      () =>
+        new Promise(() => {
+          // Simulate audio decoding / scheduling getting stuck before playSegment resolves.
+        }),
+    );
+
+    await act(async () => {
+      render(<PlayerPage />);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.queryByRole("button", { name: /open the door/i }),
+    ).not.toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(5_000);
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(1_200);
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.getByRole("button", { name: /open the door/i }),
+    ).toBeInTheDocument();
   });
 });
