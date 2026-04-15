@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, KeyboardEvent, useEffect } from "react";
+import { useState, useCallback, KeyboardEvent, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { t } from "@/lib/i18n";
@@ -8,7 +8,7 @@ import { useSettingsStore } from "@/lib/store/settings-store";
 import { STORY_TAGS, getStoryTagLabel, isPresetStoryTag, type TagCategory } from "@/lib/constants/story-tags";
 import { DURATION_OPTIONS } from "@/lib/constants/defaults";
 import { listCustomTags } from "@/lib/db";
-import { generateStoryPremise } from "@/lib/engine/premise-generator";
+import { buildLocalPremiseFallback, generateStoryPremise } from "@/lib/engine/premise-generator";
 import { advanceStory, createStoryExperience } from "@/lib/engine/story-runtime";
 import { LlmRequestError } from "@/lib/services/llm";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,63 @@ const TAG_ICONS: Record<string, React.ReactNode> = {
   mood: <Heart size={14} />,
   protagonist: <Users size={14} />,
 };
+
+const PREMISE_VARIATION_CUES = {
+  zh: [
+    "从一个被提前记录下来的未来痕迹切入",
+    "让异常先出现，原因暂时缺席",
+    "把冲突藏在一条看似普通的日常规则里",
+    "让主角先撞见结果，再倒逼问题浮现",
+    "把秘密藏进一件不合时宜出现的物件",
+    "让熟悉的人或地方先出现细微错位",
+    "让危险带着邀请感，而不是直接威胁",
+    "让第一条线索像是专门留给主角的",
+    "把伏笔落在一条反常记录或名单上",
+    "让故事从一次误认、误投或误入开始",
+  ],
+  en: [
+    "open on evidence from the future arriving too early",
+    "let the anomaly appear before its cause",
+    "hide the conflict inside an ordinary local rule",
+    "make the protagonist see the outcome before the problem",
+    "bury the secret inside an object that appears at the wrong time",
+    "tilt a familiar place or person slightly out of alignment",
+    "make the danger arrive in the shape of an invitation",
+    "let the first clue feel intentionally left for the protagonist",
+    "anchor the hook in a wrong record, list, or log entry",
+    "begin with a mistaken delivery, identity, or entry",
+  ],
+} as const;
+
+function buildPremiseVariationHint(lang: "en" | "zh") {
+  const cues = PREMISE_VARIATION_CUES[lang];
+  const cue = cues[Math.floor(Math.random() * cues.length)] ?? cues[0];
+  const nonce = Math.random().toString(36).slice(2, 6);
+
+  return lang === "zh" ? `${cue}（变化码 ${nonce}）` : `${cue} (variation ${nonce})`;
+}
+
+function normalizePremiseHistoryEntry(raw: string) {
+  return raw.trim().toLowerCase().replace(/[\s\p{P}\p{S}]/gu, "");
+}
+
+function buildPremiseHistoryKey(lang: "en" | "zh", selected: string[]) {
+  return `${lang}::${[...selected].sort().join("|")}`;
+}
+
+function appendPremiseHistory(existing: string[], nextPremise: string) {
+  const normalizedNext = normalizePremiseHistoryEntry(nextPremise);
+
+  if (!normalizedNext) {
+    return existing;
+  }
+
+  const deduped = existing.filter(
+    (entry) => normalizePremiseHistoryEntry(entry) !== normalizedNext,
+  );
+
+  return [...deduped, nextPremise].slice(-4);
+}
 
 function hasSameItems(left: string[], right: string[]) {
   return left.length === right.length && left.every((item, index) => item === right[index]);
@@ -83,6 +140,7 @@ const CreateStoryPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
+  const recentGeneratedPremisesRef = useRef<Map<string, string[]>>(new Map());
   const customTags = savedCustomTags;
   const defaultPremise = t("create.premise.placeholder", lang);
 
@@ -132,19 +190,39 @@ const CreateStoryPage = () => {
       return;
     }
 
+    const premiseInput = {
+      language: lang,
+      selectedTags: allSelected.map((tag) => ({
+        id: tag,
+        label: getStoryTagLabel(tag, lang),
+        isCustom: !isPresetStoryTag(tag),
+      })),
+      variationHint: buildPremiseVariationHint(lang),
+      avoidPremises: (() => {
+        const historyKey = buildPremiseHistoryKey(lang, allSelected);
+        const history = recentGeneratedPremisesRef.current.get(historyKey) ?? [];
+        const currentPremise = premise.trim();
+
+        return currentPremise
+          ? appendPremiseHistory(history, currentPremise)
+          : history;
+      })(),
+    } as const;
+    const historyKey = buildPremiseHistoryKey(lang, allSelected);
+
     setIsGenerating(true);
 
     try {
-      const result = await generateStoryPremise(llmConfig, {
-        language: lang,
-        selectedTags: allSelected.map((tag) => ({
-          id: tag,
-          label: getStoryTagLabel(tag, lang),
-          isCustom: !isPresetStoryTag(tag),
-        })),
-      });
+      const result = await generateStoryPremise(llmConfig, premiseInput);
 
       setPremise(result.premise);
+      recentGeneratedPremisesRef.current.set(
+        historyKey,
+        appendPremiseHistory(
+          recentGeneratedPremisesRef.current.get(historyKey) ?? [],
+          result.premise,
+        ),
+      );
       return;
 
       /*
@@ -286,7 +364,26 @@ A substitute host at a late-night radio station keeps receiving calls that descr
       */
     } catch (error) {
       console.error(error);
-      toast.error(getPremiseGenerationErrorMessage(error, lang));
+
+      if (isLikelyLlmConfigurationError(error)) {
+        toast.error(getPremiseGenerationErrorMessage(error, lang));
+        return;
+      }
+
+      const fallback = buildLocalPremiseFallback(premiseInput);
+      setPremise(fallback.premise);
+      recentGeneratedPremisesRef.current.set(
+        historyKey,
+        appendPremiseHistory(
+          recentGeneratedPremisesRef.current.get(historyKey) ?? [],
+          fallback.premise,
+        ),
+      );
+      toast.warning(
+        lang === "zh"
+          ? "AI 前提生成失败，已改用本地备用前提。"
+          : "AI premise generation failed, so a local fallback premise was used.",
+      );
     } finally {
       setIsGenerating(false);
     }

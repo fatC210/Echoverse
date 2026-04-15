@@ -249,6 +249,143 @@ describe("PlayerPage", () => {
     expect(playSegmentMock).toHaveBeenCalledTimes(1);
   });
 
+  it("shows compact english keywords for active audio layers instead of raw prompts", async () => {
+    playSegmentMock.mockResolvedValue({
+      narrationDurationSec: 4,
+      completion: new Promise<void>(() => {}),
+    });
+
+    vi.mocked(db.listSegmentsByStory).mockResolvedValue([
+      {
+        ...baseSegment,
+        audioScript: {
+          ...baseSegment.audioScript,
+          sfx_layers: [
+            {
+              id: "sfx-layer-1",
+              start_sec: 0,
+              description: "Low stone resonance vibration pulsing through wall",
+              duration_sec: 8,
+              looping: false,
+              volume: 0.6,
+            },
+          ],
+          music: {
+            description:
+              "Dark ambient drone with deep sub-bass heartbeat pulse; tribal hand-drum rhythm enters slowly mid-section, accelerating slightly toward end",
+            duration_sec: 24,
+            volume: 0.4,
+            transition: "crossfade_from_previous_4s",
+          },
+        },
+        audioStatus: {
+          ...baseSegment.audioStatus,
+          sfx: ["ready"],
+          music: "ready",
+        },
+        resolvedAudio: {
+          ...baseSegment.resolvedAudio,
+          sfxAssetIds: ["sfx_1"],
+          musicAssetId: "music_1",
+        },
+      },
+    ] as never);
+    vi.mocked(storyRuntime.listStoryAssetMap).mockResolvedValue({
+      ...baseAssets,
+      sfx_1: {
+        id: "sfx_1",
+        storyId: "story-1",
+        category: "sfx",
+        description: "Low stone resonance vibration pulsing through wall",
+        audioBlob: new Blob(["audio"], { type: "audio/mpeg" }),
+        durationSec: 8,
+        createdAt: "2026-04-14T00:00:00.000Z",
+        timesUsed: 1,
+      },
+      music_1: {
+        id: "music_1",
+        storyId: "story-1",
+        category: "music",
+        description:
+          "Dark ambient drone with deep sub-bass heartbeat pulse; tribal hand-drum rhythm enters slowly mid-section, accelerating slightly toward end",
+        audioBlob: new Blob(["audio"], { type: "audio/mpeg" }),
+        durationSec: 24,
+        createdAt: "2026-04-14T00:00:00.000Z",
+        timesUsed: 1,
+      },
+    } as never);
+
+    await act(async () => {
+      render(<PlayerPage />);
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByRole("button", { name: /stone resonance · low hum/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /dark ambient · bass pulse · drum rhythm/i })).toBeInTheDocument();
+    expect(screen.queryByText(/tribal hand-drum rhythm enters slowly mid-section/i)).not.toBeInTheDocument();
+  });
+
+  it("localizes compact audio layer keywords to chinese", async () => {
+    playSegmentMock.mockResolvedValue({
+      narrationDurationSec: 4,
+      completion: new Promise<void>(() => {}),
+    });
+
+    useSettingsStore.setState({
+      ...DEFAULT_SETTINGS,
+      isHydrated: true,
+      preferences: {
+        ...DEFAULT_SETTINGS.preferences,
+        interfaceLang: "zh",
+      },
+    });
+
+    vi.mocked(db.listSegmentsByStory).mockResolvedValue([
+      {
+        ...baseSegment,
+        audioScript: {
+          ...baseSegment.audioScript,
+          sfx_layers: [
+            {
+              id: "sfx-layer-1",
+              start_sec: 0,
+              description: "Low stone resonance vibration pulsing through wall",
+              duration_sec: 8,
+              looping: false,
+              volume: 0.6,
+            },
+          ],
+          music: {
+            description:
+              "Dark ambient drone with deep sub-bass heartbeat pulse; tribal hand-drum rhythm enters slowly mid-section, accelerating slightly toward end",
+            duration_sec: 24,
+            volume: 0.4,
+            transition: "crossfade_from_previous_4s",
+          },
+        },
+        audioStatus: {
+          ...baseSegment.audioStatus,
+          sfx: ["ready"],
+          music: "ready",
+        },
+        resolvedAudio: {
+          ...baseSegment.resolvedAudio,
+          sfxAssetIds: ["sfx_1"],
+          musicAssetId: "music_1",
+        },
+      },
+    ] as never);
+
+    await act(async () => {
+      render(<PlayerPage />);
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByRole("button", { name: /石壁共振 · 低鸣/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /暗色氛围 · 低频脉冲 · 鼓点节奏/ })).toBeInTheDocument();
+    expect(screen.queryByText(/dark ambient drone/i)).not.toBeInTheDocument();
+  });
+
   it("does not skip to choices when narration has been paused longer than the fallback timeout", async () => {
     vi.useFakeTimers();
 

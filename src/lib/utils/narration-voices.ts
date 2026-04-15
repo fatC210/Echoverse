@@ -639,8 +639,21 @@ function buildAnchoredCuesFromStructuredPlan(
 ) {
   const cues: DialogueCuePlan[] = [];
   const unknownSpeakerVoices = new Map<string, string>();
+  const pendingExtras: DialogueCuePlan[] = [];
   let cursor = 0;
   let matchedCueCount = 0;
+
+  const flushPendingExtras = () => {
+    if (!pendingExtras.length) {
+      return;
+    }
+
+    for (const pendingCue of pendingExtras) {
+      pushCue(cues, pendingCue);
+    }
+
+    pendingExtras.length = 0;
+  };
 
   for (const scriptedCue of scriptedCues) {
     const cueText = scriptedCue.text.trim();
@@ -657,13 +670,30 @@ function buildAnchoredCuesFromStructuredPlan(
     const matchText =
       normalizedMatchIndex === exactMatchIndex ? cueText : normalizedText;
 
+    const normalizedSpeaker =
+      scriptedCue.kind === "dialogue"
+        ? canonicalizeSpeaker(scriptedCue.speaker ?? undefined, knownSpeakers)
+        : undefined;
+
     if (normalizedMatchIndex === -1) {
-      return buildCuesFromStructuredPlan(
-        scriptedCues,
-        narratorVoiceId,
-        knownSpeakers,
-        speakerVoices,
-      );
+      if (scriptedCue.kind === "dialogue") {
+        const dialogueVoice = buildDialogueCueFromSpeaker(
+          normalizedSpeaker,
+          narratorVoiceId,
+          speakerVoices,
+          unknownSpeakerVoices,
+          inferGenderFromText(normalizedText),
+        );
+
+        pendingExtras.push({
+          kind: "dialogue",
+          text: normalizedText,
+          speaker: dialogueVoice.speaker,
+          voiceId: dialogueVoice.voiceId,
+        });
+      }
+
+      continue;
     }
 
     let cueStartIndex = normalizedMatchIndex;
@@ -688,11 +718,7 @@ function buildAnchoredCuesFromStructuredPlan(
       text: text.slice(cursor, cueStartIndex),
       voiceId: narratorVoiceId,
     });
-
-    const normalizedSpeaker =
-      scriptedCue.kind === "dialogue"
-        ? canonicalizeSpeaker(scriptedCue.speaker ?? undefined, knownSpeakers)
-        : undefined;
+    flushPendingExtras();
 
     if (scriptedCue.kind === "dialogue") {
       const dialogueVoice = buildDialogueCueFromSpeaker(
@@ -735,6 +761,7 @@ function buildAnchoredCuesFromStructuredPlan(
     text: text.slice(cursor),
     voiceId: narratorVoiceId,
   });
+  flushPendingExtras();
 
   return cues;
 }

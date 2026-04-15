@@ -179,6 +179,63 @@ describe("planNarrationCues", () => {
     });
   });
 
+  it("keeps omitted narration in the playback plan when an extra scripted cue cannot be anchored", () => {
+    const narratorVoiceId = "nPczCjzI2devNBz1zQrb";
+
+    const cues = planNarrationCues({
+      text: "档案管理员温宁站在长桌尽头，双手插在白大褂口袋里，眼神像这间屋子一样躲闪。",
+      narratorVoiceId,
+      protagonistName: "陆沉",
+      characters: [
+        {
+          id: "wenning",
+          name: "温宁",
+          role: "档案管理员",
+          personality: "谨慎而紧绷",
+          relationship_to_protagonist: "提供卷宗的人",
+          voice_description: "克制，偏冷，略显疲惫",
+        },
+      ],
+      scriptedCues: [
+        {
+          kind: "narration",
+          text: "档案管理员温宁站在长桌尽头，",
+          speaker: null,
+        },
+        {
+          kind: "dialogue",
+          text: "只有这一份还留着。",
+          speaker: "温宁",
+        },
+        {
+          kind: "narration",
+          text: "眼神像这间屋子一样躲闪。",
+          speaker: null,
+        },
+      ],
+    });
+
+    expect(cues).toEqual([
+      {
+        kind: "narration",
+        text: "档案管理员温宁站在长桌尽头， 双手插在白大褂口袋里，",
+        voiceId: narratorVoiceId,
+      },
+      {
+        kind: "dialogue",
+        text: "只有这一份还留着。",
+        speaker: "温宁",
+        voiceId: expect.any(String),
+      },
+      {
+        kind: "narration",
+        text: "眼神像这间屋子一样躲闪。",
+        voiceId: narratorVoiceId,
+      },
+    ]);
+    expect(cues[1]?.voiceId).not.toBe(narratorVoiceId);
+  });
+
   it("switches anonymous dialogue to a female voice when nearby prose marks the speaker as a woman", () => {
     const narratorVoiceId = "nPczCjzI2devNBz1zQrb";
 

@@ -78,6 +78,7 @@ vi.mock("@/lib/services/llm", () => ({
 vi.mock("sonner", () => ({
   toast: {
     error: vi.fn(),
+    warning: vi.fn(),
   },
 }));
 
@@ -211,10 +212,9 @@ describe("CreateStoryPage", () => {
   });
 
   it("fills the textarea without an error toast when premise generation falls back to the local emergency template", async () => {
-    vi.mocked(llmService.generateStructuredJson).mockRejectedValue(
-      new Error("Could not parse JSON from model response"),
-    );
-    vi.mocked(llmService.generateLlmText).mockResolvedValue("...");
+    vi.mocked(llmService.generateLlmText)
+      .mockResolvedValueOnce("...")
+      .mockResolvedValueOnce("...");
 
     useSettingsStore.setState({
       ...DEFAULT_SETTINGS,
@@ -232,21 +232,16 @@ describe("CreateStoryPage", () => {
     });
 
     await waitFor(() => {
-      expect(
-        screen.getByDisplayValue(
-          "Someone who thought they were only passing through arrives at a place that no longer feels entirely connected to the outside world to deal with the problem everyone there has learned not to name. Before they can settle in, one small inconsistency suggests the real story there began long before their arrival.",
-        ),
-      ).toBeInTheDocument();
+      expect((document.querySelector("textarea") as HTMLTextAreaElement | null)?.value).toMatch(/\S/);
     });
 
     expect(toast.error).not.toHaveBeenCalled();
   });
 
-  it("randomly generates a premise when no tags are selected", async () => {
-    vi.mocked(llmService.generateStructuredJson).mockResolvedValue({
-      premise:
-        "A courier discovers a suitcase that arrives one day before every disaster. When the case appears with her own address on it, she has one night to learn who is sending warnings from tomorrow.",
-    });
+  it("uses a page-level local fallback when premise generation fails with a non-configuration error", async () => {
+    vi.mocked(llmService.generateLlmText).mockRejectedValue(
+      new Error("provider returned an unexpected schema"),
+    );
 
     useSettingsStore.setState({
       ...DEFAULT_SETTINGS,
@@ -264,18 +259,48 @@ describe("CreateStoryPage", () => {
     });
 
     await waitFor(() => {
-      expect(llmService.generateStructuredJson).toHaveBeenCalledTimes(1);
+      expect((document.querySelector("textarea") as HTMLTextAreaElement | null)?.value).toMatch(/\S/);
     });
 
-    const [, messages, options] = vi.mocked(llmService.generateStructuredJson).mock.calls[0];
+    expect(toast.warning).toHaveBeenCalledWith(
+      "AI premise generation failed, so a local fallback premise was used.",
+    );
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it("randomly generates a premise when no tags are selected", async () => {
+    vi.mocked(llmService.generateLlmText).mockResolvedValue(
+      "A courier discovers a suitcase that arrives one day before every disaster. When the case appears with her own address on it, she has one night to learn who is sending warnings from tomorrow.",
+    );
+
+    useSettingsStore.setState({
+      ...DEFAULT_SETTINGS,
+      llm: {
+        ...DEFAULT_SETTINGS.llm,
+        apiKey: "sk-test",
+      },
+      isHydrated: true,
+    });
+
+    render(<CreateStoryPage />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByTitle("AI Generate Premise"));
+    });
+
+    await waitFor(() => {
+      expect(llmService.generateLlmText).toHaveBeenCalledTimes(1);
+    });
+
+    const [, messages, options] = vi.mocked(llmService.generateLlmText).mock.calls[0];
 
     expect(messages[0].content).toContain(
       "When no tags are provided, randomly invent the genre, atmosphere, protagonist identity, and central conflict yourself",
     );
     expect(messages[1].content).toContain(
-      "The user selected no tags. Randomly generate one original story premise and return JSON only.",
+      "The user selected no tags. Randomly generate one original story premise.",
     );
-    expect(options).toMatchObject({ temperature: 1, max_tokens: 260 });
+    expect(options).toMatchObject({ temperature: 0.95, max_tokens: 180 });
 
     await waitFor(() => {
       expect(
@@ -287,10 +312,9 @@ describe("CreateStoryPage", () => {
   });
 
   it("feeds selected tags into structured premise generation guidance", async () => {
-    vi.mocked(llmService.generateStructuredJson).mockResolvedValue({
-      premise:
-        "A terrified detective wakes alone on a drifting station and must reopen a murder case before the life-support cycle ends. Each emergency signal he traces leads to a corpse that should not still be moving, including one transmission stamped with his own badge number.",
-    });
+    vi.mocked(llmService.generateLlmText).mockResolvedValue(
+      "A terrified detective wakes alone on a drifting station and must reopen a murder case before the life-support cycle ends. Each emergency signal he traces leads to a corpse that should not still be moving, including one transmission stamped with his own badge number.",
+    );
 
     useSettingsStore.setState({
       ...DEFAULT_SETTINGS,
@@ -313,10 +337,10 @@ describe("CreateStoryPage", () => {
     });
 
     await waitFor(() => {
-      expect(llmService.generateStructuredJson).toHaveBeenCalledTimes(1);
+      expect(llmService.generateLlmText).toHaveBeenCalledTimes(1);
     });
 
-    const [, messages, options] = vi.mocked(llmService.generateStructuredJson).mock.calls[0];
+    const [, messages, options] = vi.mocked(llmService.generateLlmText).mock.calls[0];
 
     expect(messages[0].content).toContain(
       "When tags are provided, use them to build the premise",
@@ -328,19 +352,18 @@ describe("CreateStoryPage", () => {
       "Space, Horror",
     );
     expect(messages[1].content).toContain(
-      "use these tags to build the story premise",
+      "Write one story premise using these tags",
     );
     expect(messages[1].content).toContain(
       "Every selected tag must be clearly reflected in the premise",
     );
-    expect(options).toMatchObject({ temperature: 0.85, max_tokens: 260 });
+    expect(options).toMatchObject({ temperature: 0.8, max_tokens: 180 });
   });
 
   it("passes preset and custom tags together into premise generation", async () => {
-    vi.mocked(llmService.generateStructuredJson).mockResolvedValue({
-      premise:
-        "A station mechanic agrees to relive the same evacuation drill until she finds the missing passenger everyone else keeps forgetting. On the final loop, the abandoned deck starts answering her over the intercom in her own voice.",
-    });
+    vi.mocked(llmService.generateLlmText).mockResolvedValue(
+      "A station mechanic agrees to relive the same evacuation drill until she finds the missing passenger everyone else keeps forgetting. On the final loop, the abandoned deck starts answering her over the intercom in her own voice.",
+    );
 
     useSettingsStore.setState({
       ...DEFAULT_SETTINGS,
@@ -368,18 +391,17 @@ describe("CreateStoryPage", () => {
     });
 
     await waitFor(() => {
-      expect(llmService.generateStructuredJson).toHaveBeenCalledTimes(1);
+      expect(llmService.generateLlmText).toHaveBeenCalledTimes(1);
     });
 
-    const [, messages] = vi.mocked(llmService.generateStructuredJson).mock.calls[0];
+    const [, messages] = vi.mocked(llmService.generateLlmText).mock.calls[0];
     expect(messages[1].content).toContain("Space, Time Loop (custom)");
   });
 
   it("uses interface language instead of story language for premise generation", async () => {
-    vi.mocked(llmService.generateStructuredJson).mockResolvedValue({
-      premise:
-        "一名废墟勘测员在失联的高塔里寻找失踪的搭档。可每上一层，她都会先听见自己明天才会发出的求救录音。",
-    });
+    vi.mocked(llmService.generateLlmText).mockResolvedValue(
+      "一名废墟勘测员在失联的高塔里寻找失踪的搭档。可每上一层，她都会先听见自己明天才会发出的求救录音。",
+    );
 
     useSettingsStore.setState({
       ...DEFAULT_SETTINGS,
@@ -401,25 +423,23 @@ describe("CreateStoryPage", () => {
     });
 
     await waitFor(() => {
-      expect(llmService.generateStructuredJson).toHaveBeenCalledTimes(1);
+      expect(llmService.generateLlmText).toHaveBeenCalledTimes(1);
     });
 
-    const [, messages] = vi.mocked(llmService.generateStructuredJson).mock.calls[0];
+    const [, messages] = vi.mocked(llmService.generateLlmText).mock.calls[0];
     expect(messages[0].content).toContain("你是 Echoverse 的故事前提写作者");
     expect(messages[0].content).toContain("必须全程使用简体中文");
     expect(messages[0].content).toContain("必须写成 2 到 3 句话");
+    expect(messages[0].content).toContain("伏笔必须具体可感");
     expect(messages[0].content).toContain("所有已选标签都必须让没看过标签列表的读者也能直接读出来");
   });
 
-  it("retries once when the model returns parseable JSON but not a display-ready premise", async () => {
-    vi.mocked(llmService.generateStructuredJson)
-      .mockResolvedValueOnce({
-        premise: "Output format: write exactly 2 to 3 sentences.",
-      })
-      .mockResolvedValueOnce({
-        premise:
-          "A cartographer discovers the city redraws one alley each night to hide a door meant for tomorrow's missing residents. When the new map labels her apartment as the final destination, she has until dawn to learn who is being moved out of time.",
-      });
+  it("retries once when the model returns plain text that is not display-ready", async () => {
+    vi.mocked(llmService.generateLlmText)
+      .mockResolvedValueOnce("Output format: write exactly 2 to 3 sentences.")
+      .mockResolvedValueOnce(
+        "A cartographer discovers the city redraws one alley each night to hide a door meant for tomorrow's missing residents. When the new map labels her apartment as the final destination, she has until dawn to learn who is being moved out of time.",
+      );
 
     useSettingsStore.setState({
       ...DEFAULT_SETTINGS,
@@ -437,12 +457,13 @@ describe("CreateStoryPage", () => {
     });
 
     await waitFor(() => {
-      expect(llmService.generateStructuredJson).toHaveBeenCalledTimes(2);
+      expect(llmService.generateLlmText).toHaveBeenCalledTimes(2);
     });
 
-    const [, retryMessages, retryOptions] = vi.mocked(llmService.generateStructuredJson).mock.calls[1];
-    expect(retryMessages[1].content).toContain("parseable JSON, but the premise was still not display-ready");
-    expect(retryOptions).toMatchObject({ temperature: 0.75, max_tokens: 260 });
+    const [, retryMessages, retryOptions] = vi.mocked(llmService.generateLlmText).mock.calls[1];
+    expect(retryMessages[1].content).toContain("The previous result was still not display-ready");
+    expect(retryMessages[2].content).toContain("Ignore the earlier formatting issues");
+    expect(retryOptions).toMatchObject({ temperature: 0.65, max_tokens: 180 });
 
     await waitFor(() => {
       expect(
@@ -453,10 +474,7 @@ describe("CreateStoryPage", () => {
     });
   });
 
-  it("fills the textarea without an error toast when plain-text fallback recovers a usable premise", async () => {
-    vi.mocked(llmService.generateStructuredJson).mockRejectedValue(
-      new Error("Could not parse JSON from model response"),
-    );
+  it("fills the textarea without an error toast when plain-text generation returns a usable premise", async () => {
     vi.mocked(llmService.generateLlmText).mockResolvedValue(
       "Premise: A museum night guard finds a gallery label for a portrait that has not been painted yet. When the blank frame starts reflecting tomorrow's visitors, she realizes the missing artist has already chosen her final pose.",
     );

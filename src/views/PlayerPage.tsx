@@ -19,6 +19,7 @@ import {
 import { isElevenLabsVerified, listElevenLabsVoices, previewElevenLabsVoice } from "@/lib/services/elevenlabs";
 import type { AudioAsset, Segment, Story, VoiceOption } from "@/lib/types/echoverse";
 import { createId, formatDuration } from "@/lib/utils/echoverse";
+import { summarizeAudioLayerLabel } from "@/lib/utils/audio-layer-labels";
 import {
   buildNarrationRevealThresholds,
   getVisibleNarrationChunkCount,
@@ -364,6 +365,7 @@ function AudioLayerIndicator({
         <button
           key={layer.type}
           onClick={() => onToggle(layer.type)}
+          title={layer.name}
           className={`hover-surface rounded-full border px-3 py-1 text-xs transition-all ${
             mutedLayers[layer.type] ? "border-border/50 text-muted-foreground/60" : "border-accent/40 bg-accent/10 text-foreground"
           }`}
@@ -371,7 +373,7 @@ function AudioLayerIndicator({
           {layer.type === "sfx" ? <Volume1 size={12} className="mr-1 inline" /> : null}
           {layer.type === "music" ? <Music size={12} className="mr-1 inline" /> : null}
           {layer.type === "tts" ? <MessageCircle size={12} className="mr-1 inline" /> : null}
-          {layer.name}
+          <span className="inline-block max-w-[14rem] truncate align-middle whitespace-nowrap">{layer.name}</span>
         </button>
       ))}
     </div>
@@ -704,6 +706,19 @@ function StoryEndScreen({
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-50 overflow-y-auto bg-background">
       <div className="mx-auto max-w-2xl space-y-8 px-4 py-10">
+        <div className="flex justify-start">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onHome}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft size={14} className="mr-1" />
+            {t("end.home", lang)}
+          </Button>
+        </div>
+
         <div className="space-y-3 text-center">
           <Clapperboard size={36} className="mx-auto text-accent" />
           <h1 className="text-2xl font-bold font-serif text-gradient-primary">「{story.title}」— {t("end.title", lang)}</h1>
@@ -1384,11 +1399,29 @@ export default function PlayerPage() {
   const isWaveformAnimating = isNarrationPlaying && !isPaused;
   const audioLayers = useMemo(
     () => [
-      { type: "sfx" as const, name: currentSegment?.audioScript.sfx_layers[0]?.description || (lang === "zh" ? "音效" : "SFX"), active: currentSegment?.audioStatus.sfx.some((status) => status === "ready") ?? false },
-      { type: "music" as const, name: currentSegment?.audioScript.music?.description || (lang === "zh" ? "配乐" : "Music"), active: currentSegment?.audioStatus.music === "ready" },
+      {
+        type: "sfx" as const,
+        name: summarizeAudioLayerLabel({
+          description: currentSegment?.audioScript.sfx_layers[0]?.description,
+          type: "sfx",
+          lang,
+          mood,
+        }),
+        active: currentSegment?.audioStatus.sfx.some((status) => status === "ready") ?? false,
+      },
+      {
+        type: "music" as const,
+        name: summarizeAudioLayerLabel({
+          description: currentSegment?.audioScript.music?.description,
+          type: "music",
+          lang,
+          mood,
+        }),
+        active: currentSegment?.audioStatus.music === "ready",
+      },
       { type: "tts" as const, name: t("player.narrating", lang), active: currentSegment?.audioStatus.tts === "ready" },
     ],
-    [currentSegment, lang],
+    [currentSegment, lang, mood],
   );
 
   const audioLayerIndicator = (

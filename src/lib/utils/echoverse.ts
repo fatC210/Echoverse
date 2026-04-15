@@ -237,6 +237,43 @@ export async function blobToAudioDuration(blob: Blob) {
   }
 }
 
+const INVALID_FILENAME_CHARS = /[<>:"/\\|?*]+/g;
+const LEADING_DOTS_AND_SPACES = /^[. ]+/g;
+const TRAILING_DOTS_AND_SPACES = /[. ]+$/g;
+const WINDOWS_RESERVED_FILENAMES = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
+
+function removeControlCharacters(value: string) {
+  return Array.from(value)
+    .filter((char) => char.charCodeAt(0) >= 32 && char.charCodeAt(0) !== 127)
+    .join("");
+}
+
+function sanitizeFilenamePart(value: string) {
+  return removeControlCharacters(value)
+    .replace(INVALID_FILENAME_CHARS, "_")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(LEADING_DOTS_AND_SPACES, "")
+    .replace(TRAILING_DOTS_AND_SPACES, "")
+    .replace(/_+/g, "_");
+}
+
+export function sanitizeFilenameBase(value: string, fallback = "story") {
+  const sanitizedValue = sanitizeFilenamePart(value);
+  const sanitizedFallback = sanitizeFilenamePart(fallback) || "story";
+  const candidate =
+    sanitizedValue && sanitizedValue.replace(/_/g, "").length > 0
+      ? sanitizedValue
+      : sanitizedFallback;
+
+  return WINDOWS_RESERVED_FILENAMES.test(candidate) ? `${candidate}_file` : candidate;
+}
+
+export function buildDownloadFilename(value: string, extension: string, fallback = "story") {
+  const normalizedExtension = extension.startsWith(".") ? extension : `.${extension}`;
+  return `${sanitizeFilenameBase(value, fallback)}${normalizedExtension}`;
+}
+
 export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");

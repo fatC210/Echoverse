@@ -1,5 +1,6 @@
 import type { AudioAsset, Segment, Story } from "@/lib/types/echoverse";
-import { downloadBlob } from "@/lib/utils/echoverse";
+import { buildDownloadFilename, downloadBlob } from "@/lib/utils/echoverse";
+import { loadLameJs } from "@/lib/utils/lamejs-browser";
 
 function buildSegmentLabel(segment: Segment) {
   return `${segment.audioScript.chapter_title} (${segment.audioScript.mood_color})`;
@@ -35,14 +36,14 @@ export function exportStoryMarkdown(story: Story, segments: Segment[]) {
   const blob = new Blob([buildStoryMarkdown(story, segments)], {
     type: "text/markdown;charset=utf-8",
   });
-  downloadBlob(blob, `${story.title.replace(/[^\w-]+/g, "_")}.md`);
+  downloadBlob(blob, buildDownloadFilename(story.title, ".md", story.id));
 }
 
 export function exportWorldJson(story: Story) {
   const blob = new Blob([JSON.stringify(story.worldState, null, 2)], {
     type: "application/json;charset=utf-8",
   });
-  downloadBlob(blob, `${story.title.replace(/[^\w-]+/g, "_")}.json`);
+  downloadBlob(blob, buildDownloadFilename(story.title, ".json", story.id));
 }
 
 async function decodeWithContext(context: AudioContext, blob: Blob) {
@@ -193,13 +194,7 @@ async function renderStoryAudio(
 }
 
 async function audioBufferToMp3Blob(buffer: AudioBuffer) {
-  const lamejs = (await import("lamejs")) as {
-    Mp3Encoder: new (channels: number, sampleRate: number, kbps: number) => {
-      encodeBuffer: (left: Int16Array, right?: Int16Array) => Int8Array;
-      flush: () => Int8Array;
-    };
-  };
-
+  const lamejs = await loadLameJs();
   const channels = Math.min(2, buffer.numberOfChannels);
   const sampleRate = buffer.sampleRate;
   const encoder = new lamejs.Mp3Encoder(channels, sampleRate, 128);
@@ -242,5 +237,5 @@ export async function exportStoryAudioMp3(
 ) {
   const rendered = await renderStoryAudio(segments, assets);
   const mp3Blob = await audioBufferToMp3Blob(rendered);
-  downloadBlob(mp3Blob, `${story.title.replace(/[^\w-]+/g, "_")}.mp3`);
+  downloadBlob(mp3Blob, buildDownloadFilename(story.title, ".mp3", story.id));
 }

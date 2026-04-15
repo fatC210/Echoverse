@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractJsonFromText } from "@/lib/utils/echoverse";
+import { buildDownloadFilename, extractJsonFromText, sanitizeFilenameBase } from "@/lib/utils/echoverse";
 
 describe("extractJsonFromText", () => {
   it("parses fenced json responses", () => {
@@ -38,5 +38,29 @@ describe("extractJsonFromText", () => {
     ).toEqual({
       premise: "A museum guard hears a painting whisper her name",
     });
+  });
+});
+
+describe("sanitizeFilenameBase", () => {
+  it("preserves non-ascii story titles", () => {
+    expect(sanitizeFilenameBase("不夜城还在")).toBe("不夜城还在");
+  });
+
+  it("removes invalid Windows filename characters", () => {
+    expect(sanitizeFilenameBase("终章: 雨夜/回声?*")).toBe("终章_ 雨夜_回声_");
+  });
+
+  it("falls back when the title is empty after sanitizing", () => {
+    expect(sanitizeFilenameBase("  <>:\"/\\\\|?*  ", "story_42")).toBe("story_42");
+  });
+
+  it("avoids Windows reserved file names", () => {
+    expect(sanitizeFilenameBase("CON")).toBe("CON_file");
+  });
+});
+
+describe("buildDownloadFilename", () => {
+  it("appends the requested extension to unicode titles", () => {
+    expect(buildDownloadFilename("不夜城还在", ".mp3")).toBe("不夜城还在.mp3");
   });
 });
