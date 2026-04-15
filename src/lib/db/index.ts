@@ -63,6 +63,14 @@ interface EchoverseDB extends DBSchema {
 
 let dbPromise: Promise<IDBPDatabase<EchoverseDB>> | null = null;
 
+function normalizeCustomTagText(text: string) {
+  return text.trim();
+}
+
+function buildCustomTagId(text: string) {
+  return normalizeCustomTagText(text).toLowerCase().replace(/\s+/g, "-");
+}
+
 function ensureIndex(
   store: {
     indexNames: DOMStringList;
@@ -289,7 +297,7 @@ export async function putCustomTag(tag: CustomTag) {
 }
 
 export async function upsertCustomTag(text: string) {
-  const normalized = text.trim();
+  const normalized = normalizeCustomTagText(text);
   if (!normalized) {
     return null;
   }
@@ -307,7 +315,7 @@ export async function upsertCustomTag(text: string) {
   }
 
   const tag = {
-    id: normalized.toLowerCase().replace(/\s+/g, "-"),
+    id: buildCustomTagId(normalized),
     text: normalized,
     createdAt: new Date().toISOString(),
     usageCount: 1,
@@ -315,6 +323,23 @@ export async function upsertCustomTag(text: string) {
 
   await putCustomTag(tag);
   return tag;
+}
+
+export async function deleteCustomTag(text: string) {
+  const normalized = normalizeCustomTagText(text);
+  if (!normalized) {
+    return;
+  }
+
+  const db = await ensureDb();
+  const tx = db.transaction("custom_tags", "readwrite");
+  const store = tx.objectStore("custom_tags");
+  const existing = (await store.getAll()).find(
+    (tag) => tag.text.toLowerCase() === normalized.toLowerCase(),
+  );
+
+  await store.delete(existing?.id ?? buildCustomTagId(normalized));
+  await tx.done;
 }
 
 export async function clearAllIndexedDbData() {

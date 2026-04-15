@@ -621,8 +621,14 @@ function LoadingOverlay({
 
 function hasSegmentPlaybackAssets(segment: Segment, assets: Record<string, AudioAsset>) {
   if (!segment.resolvedAudio) {
-    return true;
+    return {
+      hasAllAssets: true,
+      missingAssetIds: [] as string[],
+    };
   }
+
+  const missingAssetIds = new Set<string>();
+  let hasMissingReferences = false;
 
   const narrationRefs = segment.resolvedAudio.narrationCues?.length
     ? segment.resolvedAudio.narrationCues.map((cue) => cue.assetId)
@@ -630,27 +636,49 @@ function hasSegmentPlaybackAssets(segment: Segment, assets: Record<string, Audio
       ? [segment.resolvedAudio.narrationAssetId]
       : [];
 
-  const hasNarrationAssets =
-    segment.audioStatus.tts !== "ready" ||
-    (narrationRefs.length > 0 && narrationRefs.every((assetId) => Boolean(assets[assetId])));
+  if (segment.audioStatus.tts === "ready") {
+    if (!narrationRefs.length) {
+      hasMissingReferences = true;
+    }
 
-  const hasSfxAssets = segment.audioStatus.sfx.every((status, index) => {
+    narrationRefs.forEach((assetId) => {
+      if (!assets[assetId]) {
+        missingAssetIds.add(assetId);
+      }
+    });
+  }
+
+  segment.audioStatus.sfx.forEach((status, index) => {
     if (status !== "ready") {
-      return true;
+      return;
     }
 
     const assetId = segment.resolvedAudio?.sfxAssetIds[index];
-    return Boolean(assetId && assets[assetId]);
+
+    if (!assetId) {
+      hasMissingReferences = true;
+      return;
+    }
+
+    if (!assets[assetId]) {
+      missingAssetIds.add(assetId);
+    }
   });
 
-  const hasMusicAsset =
-    segment.audioStatus.music !== "ready" ||
-    Boolean(
-      segment.resolvedAudio.musicAssetId &&
-        assets[segment.resolvedAudio.musicAssetId],
-    );
+  if (segment.audioStatus.music === "ready") {
+    const musicAssetId = segment.resolvedAudio.musicAssetId;
 
-  return hasNarrationAssets && hasSfxAssets && hasMusicAsset;
+    if (!musicAssetId) {
+      hasMissingReferences = true;
+    } else if (!assets[musicAssetId]) {
+      missingAssetIds.add(musicAssetId);
+    }
+  }
+
+  return {
+    hasAllAssets: !hasMissingReferences && missingAssetIds.size === 0,
+    missingAssetIds: [...missingAssetIds],
+  };
 }
 
 function StoryEndScreen({
@@ -776,6 +804,7 @@ export default function PlayerPage() {
   const pausedSegmentAdvanceRef = useRef<string | null>(null);
   const lastAutoplayedSegmentRef = useRef<string | null>(null);
   const autoplayAttemptRef = useRef<{ segmentId: string; sessionId: number } | null>(null);
+  const assetRecoveryAttemptRef = useRef<string | null>(null);
   const isAdvancingStoryRef = useRef(false);
   const isPausedRef = useRef(false);
   const worldPanelRef = useRef<HTMLDivElement | null>(null);
@@ -1197,10 +1226,6 @@ export default function PlayerPage() {
         return;
       }
 
-      if (!hasSegmentPlaybackAssets(currentSegment, assetMap)) {
-        return;
-      }
-
       if (lastAutoplayedSegmentRef.current === currentSegment.id) {
         return;
       }
@@ -1213,6 +1238,43 @@ export default function PlayerPage() {
         segmentId: currentSegment.id,
         sessionId,
       };
+
+      const playbackAssets = assetMap;
+      const playbackAssetState = hasSegmentPlaybackAssets(currentSegment, playbackAssets);
+
+      if (!playbackAssetState.hasAllAssets) {
+        if (assetRecoveryAttemptRef.current !== currentSegment.id) {
+          assetRecoveryAttemptRef.current = currentSegment.id;
+
+          try {
+            const refreshedAssets = await listStoryAssetMap(currentSegment.storyId);
+            if (cancelled || playbackSessionRef.current !== sessionId) {
+              return;
+            }
+
+            setAssetMap(refreshedAssets);
+            return;
+          } catch (error) {
+            console.warn("Failed to refresh missing segment audio assets.", {
+              segmentId: currentSegment.id,
+              missingAssetIds: playbackAssetState.missingAssetIds,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        }
+
+        console.warn(
+          "Segment audio assets still missing after refresh; continuing with available audio only.",
+          {
+            segmentId: currentSegment.id,
+            missingAssetIds: playbackAssetState.missingAssetIds,
+            audioStatus: currentSegment.audioStatus,
+          },
+        );
+      } else {
+        assetRecoveryAttemptRef.current = null;
+      }
+
       pausedSegmentAdvanceRef.current = null;
       setShowChoices(false);
       setIsPaused(false);
@@ -1231,7 +1293,7 @@ export default function PlayerPage() {
       try {
         const result = currentSegment.resolvedAudio
           ? await Promise.race([
-              mixer.playSegment(currentSegment, assetMap),
+              mixer.playSegment(currentSegment, playbackAssets),
               new Promise<Awaited<ReturnType<typeof mixer.playSegment>>>((_, reject) => {
                 playbackStartTimeout = window.setTimeout(() => {
                   reject(new Error("Segment playback start timed out"));
@@ -1260,10 +1322,10 @@ export default function PlayerPage() {
         const hasNarrationAudio = Boolean(
           result.narrationDurationSec > 0 ||
             currentSegment.resolvedAudio?.narrationCues?.some(
-              (cue) => assetMap[cue.assetId],
+              (cue) => playbackAssets[cue.assetId],
             ) ||
             (currentSegment.resolvedAudio?.narrationAssetId &&
-              assetMap[currentSegment.resolvedAudio.narrationAssetId]),
+              playbackAssets[currentSegment.resolvedAudio.narrationAssetId]),
         );
 
         setNarrationDuration(narrationDurationSec);

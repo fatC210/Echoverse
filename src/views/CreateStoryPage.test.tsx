@@ -55,6 +55,7 @@ vi.mock("framer-motion", async () => {
 
 vi.mock("@/lib/db", () => ({
   listCustomTags: vi.fn(),
+  deleteCustomTag: vi.fn(),
 }));
 
 vi.mock("@/lib/engine/story-runtime", () => ({
@@ -87,6 +88,7 @@ describe("CreateStoryPage", () => {
     window.localStorage.clear();
     pushMock.mockReset();
     vi.mocked(db.listCustomTags).mockResolvedValue([]);
+    vi.mocked(db.deleteCustomTag).mockResolvedValue(undefined);
     vi.mocked(storyRuntime.createStoryExperience).mockResolvedValue({
       id: "story-1",
       worldState: { chapters: [{ id: "chapter-1" }] },
@@ -396,6 +398,48 @@ describe("CreateStoryPage", () => {
 
     const [, messages] = vi.mocked(llmService.generateLlmText).mock.calls[0];
     expect(messages[1].content).toContain("Space, Time Loop (custom)");
+  });
+
+  it("removes persisted custom tags without merging them back from IndexedDB", async () => {
+    const persistedTags = [
+      {
+        id: "time-loop",
+        text: "Time Loop",
+        createdAt: "2026-04-15T00:00:00.000Z",
+        usageCount: 1,
+      },
+    ];
+
+    vi.mocked(db.listCustomTags).mockImplementation(async () => [...persistedTags]);
+    vi.mocked(db.deleteCustomTag).mockImplementation(async (tag: string) => {
+      const index = persistedTags.findIndex((entry) => entry.text === tag);
+      if (index >= 0) {
+        persistedTags.splice(index, 1);
+      }
+    });
+
+    useSettingsStore.setState({
+      ...DEFAULT_SETTINGS,
+      customTags: ["Time Loop"],
+      isHydrated: true,
+    });
+
+    render(<CreateStoryPage />);
+
+    const tagLabel = await screen.findByText("Time Loop");
+    const removeButton = tagLabel.closest("span")?.querySelector("button");
+
+    expect(removeButton).not.toBeNull();
+
+    await act(async () => {
+      fireEvent.click(removeButton as HTMLButtonElement);
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Time Loop")).not.toBeInTheDocument();
+    });
+
+    expect(db.deleteCustomTag).toHaveBeenCalledWith("Time Loop");
   });
 
   it("uses interface language instead of story language for premise generation", async () => {

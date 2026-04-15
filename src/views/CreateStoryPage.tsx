@@ -7,7 +7,7 @@ import { t } from "@/lib/i18n";
 import { useSettingsStore } from "@/lib/store/settings-store";
 import { STORY_TAGS, getStoryTagLabel, isPresetStoryTag, type TagCategory } from "@/lib/constants/story-tags";
 import { DURATION_OPTIONS } from "@/lib/constants/defaults";
-import { listCustomTags } from "@/lib/db";
+import { deleteCustomTag, listCustomTags } from "@/lib/db";
 import { buildLocalPremiseFallback, generateStoryPremise } from "@/lib/engine/premise-generator";
 import { advanceStory, createStoryExperience } from "@/lib/engine/story-runtime";
 import { LlmRequestError } from "@/lib/services/llm";
@@ -160,11 +160,21 @@ const CreateStoryPage = () => {
     }
   }, [customInput, customTags, setCustomTagsStore]);
 
-  const removeCustomTag = (tag: string) => {
-    const next = customTags.filter((t) => t !== tag);
-    setCustomTagsStore(next);
-    setSelectedTags((prev) => prev.filter((t) => t !== tag));
-  };
+  const removeCustomTag = useCallback(async (tag: string) => {
+    try {
+      await deleteCustomTag(tag);
+      const next = customTags.filter((currentTag) => currentTag !== tag);
+      setCustomTagsStore(next);
+      setSelectedTags((prev) => prev.filter((currentTag) => currentTag !== tag));
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        lang === "zh"
+          ? "删除自定义标签失败，请重试。"
+          : "Failed to remove the custom tag. Please try again.",
+      );
+    }
+  }, [customTags, lang, setCustomTagsStore]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.nativeEvent.isComposing) {
@@ -633,7 +643,13 @@ A substitute host at a late-night radio station keeps receiving calls that descr
                         }`}
                       >
                         {tag}
-                        <button onClick={(e) => { e.stopPropagation(); removeCustomTag(tag); }} className="hover-icon-danger ml-1 rounded-md p-0.5 text-muted-foreground">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void removeCustomTag(tag);
+                          }}
+                          className="hover-icon-danger ml-1 rounded-md p-0.5 text-muted-foreground"
+                        >
                           <X size={12} />
                         </button>
                       </span>

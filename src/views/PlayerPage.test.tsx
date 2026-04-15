@@ -249,6 +249,72 @@ describe("PlayerPage", () => {
     expect(playSegmentMock).toHaveBeenCalledTimes(1);
   });
 
+  it("reloads story assets once when autoplay starts before the latest audio blobs are in memory", async () => {
+    playSegmentMock.mockResolvedValue({
+      narrationDurationSec: 4,
+      completion: new Promise<void>(() => {}),
+    });
+
+    vi.mocked(storyRuntime.listStoryAssetMap)
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce(baseAssets);
+
+    await act(async () => {
+      render(<PlayerPage />);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(storyRuntime.listStoryAssetMap).toHaveBeenCalledTimes(2);
+    });
+
+    await waitFor(() => {
+      expect(playSegmentMock).toHaveBeenCalledTimes(1);
+    });
+
+    expect(playSegmentMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ id: "segment-1" }),
+      baseAssets,
+    );
+  });
+
+  it("falls back to timed text progression when audio assets are still missing after a refresh", async () => {
+    vi.useFakeTimers();
+
+    playSegmentMock.mockResolvedValue({
+      narrationDurationSec: 0,
+      completion: Promise.resolve(),
+    });
+
+    vi.mocked(storyRuntime.listStoryAssetMap)
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+
+    await act(async () => {
+      render(<PlayerPage />);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(storyRuntime.listStoryAssetMap).toHaveBeenCalledTimes(2);
+    expect(playSegmentMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      vi.advanceTimersByTime(7000);
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.getByRole("button", { name: /open the door/i }),
+    ).toBeInTheDocument();
+  });
+
   it("shows compact english keywords for active audio layers instead of raw prompts", async () => {
     playSegmentMock.mockResolvedValue({
       narrationDurationSec: 4,
