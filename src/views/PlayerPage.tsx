@@ -1302,6 +1302,7 @@ export default function PlayerPage() {
             ])
           : {
               narrationDurationSec: 0,
+              narrationStartAtSec: null,
               completion: Promise.resolve(),
             };
         if (playbackStartTimeout !== null) {

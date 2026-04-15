@@ -343,12 +343,12 @@ function buildWorldRows(story: Story): MemoryRow[] {
 
 function buildPlayerProfileRow(story: Story, profile: PlayerProfile): MemoryRow {
   const dominantTrait =
-    [
+    ([
       ["brave", profile.brave],
       ["cautious", profile.cautious],
       ["empathetic", profile.empathetic],
       ["analytical", profile.analytical],
-    ].sort((left, right) => right[1] - left[1])[0]?.[0] ?? "balanced";
+    ] as Array<[string, number]>).sort((left, right) => right[1] - left[1])[0]?.[0] ?? "balanced";
 
   return {
     id: "player_profile:current",

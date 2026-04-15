@@ -61,8 +61,14 @@ export const STORY_TAGS = {
 export type TagCategory = keyof typeof STORY_TAGS;
 export type TagOption = (typeof STORY_TAGS)[TagCategory]["options"][number];
 
-const STORY_TAG_OPTIONS = Object.values(STORY_TAGS).flatMap((category) => category.options);
-const STORY_TAG_OPTION_BY_ID = new Map(STORY_TAG_OPTIONS.map((option) => [option.id, option] as const));
+const STORY_TAG_OPTIONS: TagOption[] = [];
+
+for (const category of Object.values(STORY_TAGS) as Array<(typeof STORY_TAGS)[TagCategory]>) {
+  STORY_TAG_OPTIONS.push(...(category.options as readonly TagOption[]));
+}
+const STORY_TAG_OPTION_BY_ID = new Map<string, TagOption>(
+  STORY_TAG_OPTIONS.map((option) => [option.id, option] as const),
+);
 
 export function getStoryTagLabel(tagId: string, lang: Language) {
   return STORY_TAG_OPTION_BY_ID.get(tagId)?.label[lang] ?? tagId;
